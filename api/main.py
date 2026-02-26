@@ -6,6 +6,7 @@ import shutil
 import os
 
 from agents.xml_parser import parse_jira_xml
+from agents.code_scanner import scan_codebase
 from agents.impact_engine import analyze_impact
 from agents.generator_engine import generate_test_cases
 from agents.reviewer_engine import review_coverage
@@ -54,10 +55,15 @@ async def analyze_dashboard(request: Request, file: UploadFile = File(...)):
     config = load_config("config.yaml")
     impact = analyze_impact(story)
 
-    risk_score, risk_level, confidence = calculate_risk_score(impact, story)
+    # Detect impacted modules from impact analysis
+    module_name = "bakong" if "bakong" in story["summary"].lower() else "ftt"
+    code_risk = scan_codebase(module_name)
+    print("Code Risk Signals:", code_risk)
+
+    risk_score, risk_level, confidence = calculate_risk_score(impact, story, code_risk)
     risk_color = get_risk_color(risk_score)
 
-    test_cases = generate_test_cases(story, impact, config)
+    test_cases = generate_test_cases(story, impact, config, code_risk, risk_score, risk_level)
     review = review_coverage(impact, test_cases)
 
     governance = apply_governance_rules(
@@ -107,7 +113,16 @@ def export_pdf():
     elements.append(Spacer(1, 0.3 * inch))
 
     for tc in latest_result["test_cases"]:
-        elements.append(Paragraph(tc, styles["Normal"]))
+
+        content = f"""
+        <b>{tc['test_case_id']} - {tc['summary']}</b><br/>
+        Module: {tc['module']} | Channel: {tc['channel']} | Priority: {tc['priority']} | Type: {tc['test_type']}<br/>
+        <b>Precondition:</b> {tc['precondition']}<br/>
+        <b>Steps:</b> {tc['steps']}<br/>
+        <b>Expected:</b> {tc['expected_result']}<br/><br/>
+        """
+
+        elements.append(Paragraph(content, styles["Normal"]))
         elements.append(Spacer(1, 0.2 * inch))
 
     doc.build(elements)
@@ -130,7 +145,24 @@ def export_docx():
     document.add_heading("Generated Test Cases", level=1)
 
     for tc in latest_result["test_cases"]:
-        document.add_paragraph(tc)
+
+        document.add_heading(f"{tc['test_case_id']} - {tc['summary']}", level=2)
+
+        document.add_paragraph(f"Module: {tc['module']}")
+        document.add_paragraph(f"Channel: {tc['channel']}")
+        document.add_paragraph(f"Priority: {tc['priority']}")
+        document.add_paragraph(f"Type: {tc['test_type']}")
+
+        document.add_paragraph("Precondition:")
+        document.add_paragraph(tc["precondition"])
+
+        document.add_paragraph("Steps:")
+        document.add_paragraph(tc["steps"])
+
+        document.add_paragraph("Expected Result:")
+        document.add_paragraph(tc["expected_result"])
+
+        document.add_page_break()
 
     document.save(file_path)
 
@@ -156,10 +188,32 @@ def export_excel():
     ws = wb.active
     ws.title = "Test Cases"
 
-    ws.append(["Test Case"])
+    headers = [
+        "Test Case ID",
+        "Module",
+        "Channel",
+        "Summary",
+        "Priority",
+        "Test Type",
+        "Precondition",
+        "Steps",
+        "Expected Result"
+    ]
+
+    ws.append(headers)
 
     for tc in latest_result["test_cases"]:
-        ws.append([tc])
+        ws.append([
+            tc["test_case_id"],
+            tc["module"],
+            tc["channel"],
+            tc["summary"],
+            tc["priority"],
+            tc["test_type"],
+            tc["precondition"],
+            tc["steps"],
+            tc["expected_result"],
+        ])
 
     wb.save(file_path)
 

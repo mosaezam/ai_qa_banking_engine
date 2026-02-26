@@ -1,114 +1,127 @@
-def generate_test_cases(story, impact, config):
+def generate_test_cases(story, impact, config,
+                        code_risk=None,
+                        risk_score=50,
+                        risk_level="MEDIUM"):
+
+    module = "FTT" if "ftt" in story["summary"].lower() else "BAKONG"
+    channel = "MAE"
 
     test_cases = []
-    tc_id = 1
+    tc_counter = 1
 
-    def add_case(description):
-        nonlocal tc_id
-        test_cases.append(f"TC{tc_id:03d} - {description}")
-        tc_id += 1
+    def create_test_case(summary, steps, expected, priority="High"):
+        nonlocal tc_counter
+        tc_id = f"TC_{tc_counter:03}"
+        tc_counter += 1
 
-    channel = config.get("channel", "MAE")
+        return {
+            "test_case_id": tc_id,
+            "module": module,
+            "channel": channel,
+            "summary": summary,
+            "priority": priority,
+            "test_type": "Manual",
+            "precondition": f"User logged into {channel} and navigated to {module} module",
+            "steps": steps,
+            "expected_result": expected
+        }
 
-    # =====================================================
-    # CHANNEL LOGIC
-    # =====================================================
+    # -------------------------
+    # BASE TESTS (Always Add)
+    # -------------------------
 
-    # -----------------------
-    # 🟢 MAE (RMBP + DCC)
-    # -----------------------
-    if channel == "MAE":
+    test_cases.append(create_test_case(
+        summary="Verify successful transaction flow",
+        steps="1. Initiate transfer\n2. Enter valid amount\n3. Submit transfer",
+        expected="Transaction should complete successfully"
+    ))
 
-        # ONLINE (RMBP=ON + DCC=ON)
-        add_case("[MAE ONLINE] Verify frontend allows transaction when RMBP=ON")
-        add_case("[MAE ONLINE] Verify backend propagates SST when DCC=ON")
-        add_case("[MAE ONLINE] Verify SST calculated correctly at configured percentage")
-        add_case("[MAE ONLINE] Verify total amount = principal + fee + SST")
+    # -------------------------
+    # IMPACT BASED TESTS
+    # -------------------------
 
-        # Middleware
-        add_case("[MAE ONLINE] Verify ESB payload contains SST")
-        add_case("[MAE ONLINE] Verify CICS maps SST correctly")
+    if "Financial Calculation Impact" in impact:
+        test_cases.append(create_test_case(
+            summary="Verify SST calculation accuracy",
+            steps="1. Enter transfer amount\n2. Validate SST calculation",
+            expected="SST must match configured percentage"
+        ))
 
-        # Core Banking
-        add_case("[MAE ONLINE] Verify core banking deducts total including SST")
-        add_case("[MAE ONLINE] Verify debit-credit reconciliation in core banking")
+    if "API Contract Impact" in impact:
+        test_cases.append(create_test_case(
+            summary="Verify API request and response schema",
+            steps="1. Trigger transfer\n2. Inspect API payload",
+            expected="API must follow defined contract"
+        ))
 
-        # API
-        add_case("[MAE ONLINE] Validate API request includes SST field")
-        add_case("[MAE ONLINE] Validate API response reflects updated fee structure")
+    if "Core Banking Impact" in impact:
+        test_cases.append(create_test_case(
+            summary="Verify ledger posting in core banking",
+            steps="1. Complete transfer\n2. Verify ledger entry",
+            expected="Ledger must reflect transaction"
+        ))
 
-        # Control systems
-        add_case("[MAE ONLINE] Verify CCPP reflects SST component correctly")
-        add_case("[MAE ONLINE] Verify RSA CQ/Deny/Review flow unaffected")
+    # -------------------------
+    # CODE RISK BASED TESTS
+    # -------------------------
 
-        # OFFLINE (RMBP=OFF + DCC=OFF)
-        add_case("[MAE OFFLINE] Verify frontend hides SST when RMBP=OFF")
-        add_case("[MAE OFFLINE] Verify backend suppresses SST when DCC=OFF")
-        add_case("[MAE OFFLINE] Verify no SST calculated")
-        add_case("[MAE OFFLINE] Verify total amount excludes SST")
+    if code_risk:
 
-        # Middleware
-        add_case("[MAE OFFLINE] Verify ESB payload excludes SST")
-        add_case("[MAE OFFLINE] Verify CICS does not map SST")
+        if code_risk.get("limit_checks", 0) > 0:
+            test_cases.append(create_test_case(
+                summary="Verify transfer limit boundary validation",
+                steps="1. Enter amount equal to daily limit\n2. Submit transfer",
+                expected="System must allow within limit"
+            ))
 
-        # Core Banking
-        add_case("[MAE OFFLINE] Verify core banking deducts without SST")
-        add_case("[MAE OFFLINE] Verify debit-credit reconciliation without SST")
+        if code_risk.get("fee_logic", 0) > 0:
+            test_cases.append(create_test_case(
+                summary="Verify fee rounding precision",
+                steps="1. Enter decimal amount\n2. Validate fee rounding",
+                expected="Fee rounding must follow business rules"
+            ))
 
-        # API
-        add_case("[MAE OFFLINE] Validate API request excludes SST field")
-        add_case("[MAE OFFLINE] Validate API response excludes SST structure")
+        if code_risk.get("error_handling", 0) > 2:
+            test_cases.append(create_test_case(
+                summary="Verify transaction failure handling",
+                steps="1. Simulate backend failure\n2. Submit transfer",
+                expected="Proper error must be shown"
+            ))
 
-    # -----------------------
-    # 🔵 M2U (DCC Only)
-    # -----------------------
-    elif channel == "M2U":
+    # -------------------------
+    # 🔥 RISK-BASED SCALING
+    # -------------------------
 
-        # ONLINE (DCC=ON)
-        add_case("[M2U ONLINE] Verify frontend displays SST when DCC=ON")
-        add_case("[M2U ONLINE] Verify backend propagates SST when DCC=ON")
-        add_case("[M2U ONLINE] Verify SST calculated correctly")
-        add_case("[M2U ONLINE] Verify total amount includes SST")
+    if risk_level in ["HIGH", "CRITICAL"]:
 
-        # Middleware
-        add_case("[M2U ONLINE] Verify ESB payload contains SST")
-        add_case("[M2U ONLINE] Verify CICS maps SST correctly")
+        test_cases.append(create_test_case(
+            summary="Verify negative amount validation",
+            steps="1. Enter negative transfer amount\n2. Submit",
+            expected="System must reject negative values",
+            priority="Critical"
+        ))
 
-        # Core Banking
-        add_case("[M2U ONLINE] Verify core banking deducts total including SST")
-        add_case("[M2U ONLINE] Verify debit-credit reconciliation in core banking")
+        test_cases.append(create_test_case(
+            summary="Verify zero amount validation",
+            steps="1. Enter zero transfer amount\n2. Submit",
+            expected="System must not allow zero transfer",
+            priority="Critical"
+        ))
 
-        # API
-        add_case("[M2U ONLINE] Validate API request includes SST field")
-        add_case("[M2U ONLINE] Validate API response reflects updated fee structure")
+    if risk_level == "CRITICAL":
 
-        # OFFLINE (DCC=OFF)
-        add_case("[M2U OFFLINE] Verify frontend hides SST when DCC=OFF")
-        add_case("[M2U OFFLINE] Verify backend suppresses SST when DCC=OFF")
-        add_case("[M2U OFFLINE] Verify no SST calculated")
-        add_case("[M2U OFFLINE] Verify total amount excludes SST")
+        test_cases.append(create_test_case(
+            summary="Verify timeout handling for external API",
+            steps="1. Simulate API timeout\n2. Submit transfer",
+            expected="System must retry or show timeout message",
+            priority="Critical"
+        ))
 
-        # Middleware
-        add_case("[M2U OFFLINE] Verify ESB payload excludes SST")
-        add_case("[M2U OFFLINE] Verify CICS does not map SST")
-
-        # Core Banking
-        add_case("[M2U OFFLINE] Verify core banking deducts without SST")
-        add_case("[M2U OFFLINE] Verify debit-credit reconciliation without SST")
-
-        # API
-        add_case("[M2U OFFLINE] Validate API request excludes SST field")
-        add_case("[M2U OFFLINE] Validate API response excludes SST structure")
-
-    # =====================================================
-    # COMMON VALIDATIONS
-    # =====================================================
-
-    add_case("Verify minimum transfer boundary amount")
-    add_case("Verify maximum transfer boundary amount")
-    add_case("Verify invalid amount scenario")
-    add_case("Verify invalid currency scenario")
-    add_case("Verify concurrent transactions handled correctly")
-    add_case("Verify performance under peak load")
+        test_cases.append(create_test_case(
+            summary="Verify concurrent transaction handling",
+            steps="1. Trigger multiple simultaneous transfers",
+            expected="System must maintain consistency",
+            priority="Critical"
+        ))
 
     return test_cases

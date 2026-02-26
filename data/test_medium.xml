@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+    <channel>
+        <item>
+            <summary>Enhancement for overseas transfer API response</summary>
+            <description>
+                Modify API response structure to include transaction reference ID.
+            </description>
+            <priority>High</priority>
+        </item>
+    </channel>
+</rss>

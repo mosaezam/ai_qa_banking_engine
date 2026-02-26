@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+    <channel>
+        <item>
+            <summary>SST implementation for Overseas Transfer affecting Core Banking</summary>
+            <description>
+                Implement SST calculation for overseas transfer.
+                Update API payload and response.
+                Modify core banking ledger posting.
+                Update feature flag configuration.
+                Validate performance under load.
+            </description>
+            <priority>Highest</priority>
+        </item>
+    </channel>
+</rss>
