@@ -1,7 +1,10 @@
-def generate_test_cases(story, impact, config,
+def generate_test_cases(story, 
+                        impact, 
+                        config,
                         code_risk=None,
-                        risk_score=50,
-                        risk_level="MEDIUM"):
+                        risk_score=None,
+                        risk_level=None
+                 ): 
 
     module = "FTT" if "ftt" in story["summary"].lower() else "BAKONG"
     channel = "MAE"
