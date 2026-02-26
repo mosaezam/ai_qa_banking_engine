@@ -1,0 +1,52 @@
+Title,Priority,WordCount,FinancialImpact(0/1),APIImpact(0/1),CalculationImpact(0/1),UIImpact(0/1),PerformanceImpact(0/1),RiskLabel
+
+SST for DuitNow transfer enhancement,Highest,910,1,1,1,1,1,CRITICAL
+SST for cross-border fee recalculation,High,720,1,0,1,0,1,HIGH
+UI redesign for transfer confirmation page,Medium,450,0,0,0,1,0,MEDIUM
+Performance optimization for MAE dashboard,Low,320,0,0,0,0,1,LOW
+Fix incorrect interest computation in loan module,Highest,840,1,0,1,0,0,CRITICAL
+API contract update for card services,High,610,0,1,0,0,1,HIGH
+Enhancement for biometric login flow,Medium,500,0,0,0,1,0,MEDIUM
+Update AML rule configuration engine,Highest,880,1,1,1,0,1,CRITICAL
+Minor UI label correction in profile screen,Low,110,0,0,0,1,0,LOW
+Transaction history pagination improvement,Medium,360,0,1,0,1,0,MEDIUM
+Overseas transfer exchange rate fix,High,690,1,1,1,0,0,HIGH
+Settlement reconciliation timing adjustment,Highest,920,1,1,1,1,1,CRITICAL
+Enable feature flag for promo cashback,Medium,410,1,0,1,1,0,HIGH
+Bug fix in recurring payment schedule,High,600,1,0,1,0,0,HIGH
+Security patch for OTP validation logic,Highest,870,1,1,1,0,1,CRITICAL
+Improve API timeout handling for FTT,Medium,480,0,1,0,0,1,MEDIUM
+Dashboard analytics calculation correction,High,650,1,0,1,1,0,HIGH
+Refactor overseas module backend logic,High,700,1,1,1,0,1,HIGH
+Performance improvement for login service,Low,250,0,0,0,0,1,LOW
+Add validation for duplicate beneficiaries,Medium,390,1,0,0,1,0,MEDIUM
+Fix rounding issue in Visa Direct transfer,High,610,1,0,1,0,0,HIGH
+Core banking balance mismatch defect,Highest,950,1,1,1,1,1,CRITICAL
+Enhance fraud detection scoring logic,Highest,890,1,1,1,0,1,CRITICAL
+Update QR payment parsing structure,High,630,0,1,1,1,0,HIGH
+Minor spacing adjustment in MAE UI,Low,130,0,0,0,1,0,LOW
+Transaction fee display correction,Medium,420,1,0,1,1,0,HIGH
+API security header enhancement,High,570,0,1,0,0,1,HIGH
+Optimize background reconciliation batch job,Medium,460,1,1,1,0,1,HIGH
+Refine feature flag logic for promo rollout,Medium,350,0,0,0,1,0,MEDIUM
+Fix incorrect cashback computation rule,High,640,1,0,1,0,0,HIGH
+Enhance overseas beneficiary validation,Medium,400,1,1,0,1,0,HIGH
+Update device binding logic,Medium,380,0,1,0,0,1,MEDIUM
+Critical defect in settlement posting logic,Highest,980,1,1,1,1,1,CRITICAL
+Improve MAE push notification handling,Low,260,0,0,0,1,1,LOW
+Interest accrual correction for savings account,High,720,1,0,1,0,0,HIGH
+Modify overseas transfer retry logic,Medium,450,0,1,0,0,1,MEDIUM
+Enhance logging for payment gateway integration,Medium,390,0,1,0,0,1,MEDIUM
+UI update for failed transaction screen,Low,200,0,0,0,1,0,LOW
+Fix incorrect tax calculation for cross-border,Highest,860,1,0,1,0,1,CRITICAL
+Batch performance improvement for core API,Medium,430,0,1,0,0,1,MEDIUM
+Enable new remittance corridor configuration,High,680,1,1,1,0,1,HIGH
+Recalculate FX margin logic for overseas,High,710,1,1,1,0,0,HIGH
+UI alignment fix for transfer summary page,Low,150,0,0,0,1,0,LOW
+Bug fix in auto-reversal transaction engine,High,620,1,1,1,0,1,HIGH
+Enhance compliance reporting export module,Medium,500,1,1,0,1,0,HIGH
+Adjust timeout for Bakong integration API,Medium,420,0,1,0,0,1,MEDIUM
+Fix duplicate transaction posting defect,Highest,930,1,1,1,1,1,CRITICAL
+Improve overseas performance throttling logic,Low,280,0,0,0,0,1,LOW
+Feature flag rollout for new MAE transfer limit,Medium,360,1,0,0,1,0,MEDIUM
+Correct settlement currency conversion error,Highest,900,1,1,1,0,1,CRITICAL

@@ -1,0 +1,14 @@
+# =========================================
+# AI QA Overseas (FTT) Engine Configuration
+# =========================================
+
+channel: MAE        # MAE or M2U
+environment: UAT    # UAT / SIT / PROD
+module: AUTO     # FTT / Bakong / Visa Direct / Western union / MOT
+
+flags:
+  frontend_flag: rmbp
+  backend_flag: dcc
+
+overseas:
+  sst_percentage: 8

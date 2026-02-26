@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI QA Overseas Risk Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+<style>
+body {
+    margin: 0;
+    font-family: 'Poppins', sans-serif;
+    background:
+        radial-gradient(circle at 20% 20%, rgba(255,0,150,0.2), transparent 40%),
+        radial-gradient(circle at 80% 30%, rgba(0,200,255,0.2), transparent 40%),
+        radial-gradient(circle at 50% 80%, rgba(0,255,170,0.15), transparent 40%),
+        linear-gradient(135deg, #0f2027, #1b2735, #2c5364);
+    background-attachment: fixed;
+    color: white;
+    padding: 40px;
+}
+
+/* HEADER */
+h1 {
+    text-align: center;
+    margin-bottom: 40px;
+    font-size: 32px;
+}
+
+/* FORM */
+form {
+    text-align: center;
+    margin-bottom: 50px;
+}
+
+button {
+    padding: 10px 20px;
+    background: linear-gradient(90deg, #00c6ff, #0072ff);
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 600;
+    color: white;
+    transition: 0.3s;
+}
+
+button:hover {
+    transform: translateY(-2px);
+}
+
+/* DASHBOARD GRID */
+.dashboard {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 25px;
+}
+
+/* CARD STYLE */
+.card {
+    background: rgba(255,255,255,0.08);
+    backdrop-filter: blur(18px);
+    border-radius: 20px;
+    padding: 25px;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 25px 45px rgba(0,0,0,0.7);
+}
+
+/* LARGE CARDS */
+.large {
+    grid-column: span 2;
+}
+
+/* RISK GAUGE */
+.gauge-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+.gauge {
+    --risk-percentage: {{ risk_score }}%;
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    animation: fillGauge 1.5s ease-out forwards;
+}
+
+/* Dynamic risk color */
+.gauge {
+    background: var(--gauge-gradient);
+    box-shadow: var(--gauge-shadow);
+}
+
+@keyframes fillGauge {
+    from {
+        background: conic-gradient(
+            rgba(255,255,255,0.1) 0%,
+            rgba(255,255,255,0.1) 100%
+        );
+    }
+}
+
+.gauge::before {
+    content: "";
+    width: 150px;
+    height: 150px;
+    background: #1b2735;
+    border-radius: 50%;
+    position: absolute;
+}
+
+.gauge-value {
+    position: absolute;
+    font-size: 32px;
+    font-weight: 700;
+}
+
+.badge {
+    margin-top: 15px;
+    padding: 8px 18px;
+    border-radius: 20px;
+    font-weight: 600;
+}
+
+.GREEN { background: #28a745; }
+.YELLOW { background: #ffc107; color: black; }
+.RED { background: #dc3545; }
+
+/* GOVERNANCE */
+.governance-block {
+    font-size: 22px;
+    font-weight: 700;
+    padding: 12px;
+    border-radius: 12px;
+    text-align: center;
+}
+
+.approve {
+    background: #28a745;
+    box-shadow: 0 0 20px rgba(40,167,69,0.6);
+}
+
+.review {
+    background: #ffc107;
+    color: black;
+    box-shadow: 0 0 20px rgba(255,193,7,0.6);
+}
+
+.block {
+    background: #dc3545;
+    box-shadow: 0 0 25px rgba(220,53,69,0.7);
+}
+
+/* TEST CASES */
+.testcases-card {
+    display: flex;
+    flex-direction: column;
+}
+
+.testcase-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.download-buttons button {
+    margin-left: 6px;
+    padding: 6px 12px;
+    font-size: 13px;
+}
+
+.testcase-list {
+    margin-top: 15px;
+    max-height: 250px;
+    overflow-y: auto;
+}
+</style>
+</head>
+
+<body>
+
+<h1>AI QA Overseas Engine - Risk Dashboard</h1>
+
+<form action="/dashboard" method="post" enctype="multipart/form-data">
+    <input type="file" name="file" required>
+    <button type="submit">Analyze Story</button>
+</form>
+
+{% if risk_score is not none %}
+
+<div class="dashboard">
+
+    <!-- STORY -->
+    <div class="card large">
+        <h2>Story Summary</h2>
+        <p>{{ story_summary }}</p>
+    </div>
+
+    <!-- RISK -->
+    <div class="card">
+        <h2>Risk Assessment</h2>
+        <div class="gauge-container">
+            <div class="gauge" style="--gauge-gradient: {% if risk_color == 'GREEN' %}conic-gradient(#28a745 0% var(--risk-percentage), rgba(255,255,255,0.08) var(--risk-percentage) 100%){% elif risk_color == 'YELLOW' %}conic-gradient(#ffc107 0% var(--risk-percentage), rgba(255,255,255,0.08) var(--risk-percentage) 100%){% else %}conic-gradient(#dc3545 0% var(--risk-percentage), rgba(255,255,255,0.08) var(--risk-percentage) 100%){% endif %}; --gauge-shadow: {% if risk_color == 'GREEN' %}0 0 30px rgba(40,167,69,0.6){% elif risk_color == 'YELLOW' %}0 0 30px rgba(255,193,7,0.6){% else %}0 0 35px rgba(220,53,69,0.7){% endif %};">
+                <div class="gauge-value">{{ risk_score }}/100</div>
+            </div>
+            <div class="badge {{ risk_color }}">
+                {{ risk_level }}
+            </div>
+            <p>Confidence: {{ confidence }}%</p>
+        </div>
+    </div>
+
+    <!-- COVERAGE -->
+    <div class="card">
+        <h2>Coverage Score</h2>
+        <h1>{{ coverage_score }}%</h1>
+    </div>
+
+    <!-- IMPACT -->
+    <div class="card">
+        <h2>Impact Areas</h2>
+        <ul>
+            {% for item in impact_areas %}
+            <li>{{ item }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <!-- GOVERNANCE -->
+    <div class="card">
+        <h2>Governance Decision</h2>
+        <div class="governance-block
+            {% if governance_decision == 'APPROVE' %}approve
+            {% elif governance_decision == 'REVIEW' %}review
+            {% else %}block
+            {% endif %}">
+            {{ governance_decision }}
+        </div>
+    </div>
+
+    <!-- TEST CASES -->
+    <div class="card large testcases-card">
+
+        <div class="testcase-header">
+            <h2>Generated Test Cases</h2>
+
+            <div class="download-buttons">
+                <a href="/export/pdf" target="_blank"><button>PDF</button></a>
+                <a href="/export/docx" target="_blank"><button>Word</button></a>
+                <a href="/export/excel" target="_blank"><button>Excel</button></a>
+            </div>
+        </div>
+
+        <ul class="testcase-list">
+            {% for tc in test_cases %}
+            <li>{{ tc }}</li>
+            {% endfor %}
+        </ul>
+
+    </div>
+
+</div>
+
+{% endif %}
+
+</body>
+</html>
