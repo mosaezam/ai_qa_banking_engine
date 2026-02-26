@@ -6,3 +6,7 @@ logs/
 reports/
 *.db
 *.txz
+*.pdf
+*.docx
+*.xlsx
+temp_uploads/
