@@ -1,283 +1,1233 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>AI QA Overseas Risk Dashboard</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
-
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI QA Risk Intelligence Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
+
+/* ============================================================
+   DESIGN SYSTEM
+   ============================================================ */
+:root {
+  --bg-base:       #050B14;
+  --bg-panel:      #0A1628;
+  --bg-card:       #0D1E35;
+  --bg-card-hover: #112240;
+  --border:        rgba(0,180,255,0.10);
+  --border-bright: rgba(0,180,255,0.28);
+
+  --accent-blue:   #00B4FF;
+  --accent-cyan:   #00FFD1;
+  --accent-gold:   #FFB830;
+
+  --green:  #00E676;
+  --yellow: #FFD600;
+  --red:    #FF1744;
+  --critical: #FF4081;
+
+  --text-primary:   #E8F4FF;
+  --text-secondary: #7A9BBF;
+  --text-muted:     #3D5A7A;
+
+  --font-display: 'Space Mono', monospace;
+  --font-body:    'DM Sans', sans-serif;
+
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 22px;
+
+  --shadow-card: 0 4px 40px rgba(0,0,0,0.6), 0 1px 0 rgba(0,180,255,0.08) inset;
+  --glow-blue:  0 0 30px rgba(0,180,255,0.15);
+  --glow-green: 0 0 30px rgba(0,230,118,0.15);
+  --glow-red:   0 0 30px rgba(255,23,68,0.2);
+}
+
+/* ============================================================
+   RESET & BASE
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
 body {
-    margin: 0;
-    font-family: 'Poppins', sans-serif;
-    background:
-        radial-gradient(circle at 20% 20%, rgba(255,0,150,0.2), transparent 40%),
-        radial-gradient(circle at 80% 30%, rgba(0,200,255,0.2), transparent 40%),
-        radial-gradient(circle at 50% 80%, rgba(0,255,170,0.15), transparent 40%),
-        linear-gradient(135deg, #0f2027, #1b2735, #2c5364);
-    background-attachment: fixed;
-    color: white;
-    padding: 40px;
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  min-height: 100vh;
+  overflow-x: hidden;
 }
 
-h1 {
-    text-align: center;
-    margin-bottom: 40px;
-    font-size: 32px;
+/* animated background grid */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(0,180,255,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,180,255,0.025) 1px, transparent 1px);
+  background-size: 48px 48px;
+  pointer-events: none;
+  z-index: 0;
 }
 
-form {
-    text-align: center;
-    margin-bottom: 50px;
+/* scanning line */
+body::after {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent-blue), transparent);
+  animation: scanline 6s ease-in-out infinite;
+  z-index: 1;
+  opacity: 0.4;
 }
 
-button {
-    padding: 10px 20px;
-    background: linear-gradient(90deg, #00c6ff, #0072ff);
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    font-weight: 600;
-    color: white;
+@keyframes scanline {
+  0%   { top: 0%; opacity: 0; }
+  10%  { opacity: 0.4; }
+  90%  { opacity: 0.4; }
+  100% { top: 100%; opacity: 0; }
 }
 
-.dashboard {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 25px;
+/* ============================================================
+   LAYOUT SHELL
+   ============================================================ */
+.shell {
+  display: flex;
+  min-height: 100vh;
+  position: relative;
+  z-index: 2;
 }
 
+/* ============================================================
+   SIDEBAR
+   ============================================================ */
+.sidebar {
+  width: 72px;
+  background: var(--bg-panel);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 0;
+  gap: 8px;
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  z-index: 100;
+}
+
+.sidebar-logo {
+  width: 40px; height: 40px;
+  background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-display);
+  font-size: 14px; font-weight: 700;
+  color: var(--bg-base);
+  margin-bottom: 24px;
+  box-shadow: 0 0 20px rgba(0,180,255,0.3);
+}
+
+.sidebar-icon {
+  width: 44px; height: 44px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: var(--text-muted);
+  font-size: 18px;
+}
+
+.sidebar-icon:hover, .sidebar-icon.active {
+  background: rgba(0,180,255,0.12);
+  color: var(--accent-blue);
+}
+
+.sidebar-icon.active {
+  box-shadow: 0 0 0 1px rgba(0,180,255,0.3);
+}
+
+/* ============================================================
+   MAIN CONTENT
+   ============================================================ */
+.main {
+  margin-left: 72px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ============================================================
+   TOPBAR
+   ============================================================ */
+.topbar {
+  height: 64px;
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 32px;
+  position: sticky; top: 0;
+  z-index: 50;
+  backdrop-filter: blur(20px);
+}
+
+.topbar-left {
+  display: flex; align-items: center; gap: 16px;
+}
+
+.topbar-title {
+  font-family: var(--font-display);
+  font-size: 13px;
+  color: var(--accent-blue);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.topbar-breadcrumb {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-family: var(--font-display);
+}
+
+.topbar-sep {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.status-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 10px var(--green);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.topbar-right {
+  display: flex; align-items: center; gap: 20px;
+}
+
+.engine-version {
+  font-family: var(--font-display);
+  font-size: 11px;
+  color: var(--text-muted);
+  background: rgba(0,180,255,0.06);
+  border: 1px solid var(--border);
+  padding: 4px 10px;
+  border-radius: 6px;
+}
+
+/* ============================================================
+   UPLOAD ZONE
+   ============================================================ */
+.upload-zone {
+  padding: 32px;
+  border-bottom: 1px solid var(--border);
+}
+
+.upload-inner {
+  background: var(--bg-card);
+  border: 1px dashed var(--border-bright);
+  border-radius: var(--radius-lg);
+  padding: 28px 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  transition: all 0.3s;
+}
+
+.upload-inner:hover {
+  border-color: var(--accent-blue);
+  background: var(--bg-card-hover);
+  box-shadow: var(--glow-blue);
+}
+
+.upload-info {
+  display: flex; align-items: center; gap: 16px;
+}
+
+.upload-icon {
+  width: 48px; height: 48px;
+  background: rgba(0,180,255,0.1);
+  border: 1px solid rgba(0,180,255,0.2);
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+}
+
+.upload-text h3 {
+  font-size: 15px; font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.upload-text p {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.upload-actions {
+  display: flex; align-items: center; gap: 12px;
+}
+
+.file-input-label {
+  padding: 10px 20px;
+  background: rgba(0,180,255,0.08);
+  border: 1px solid var(--border-bright);
+  border-radius: var(--radius-sm);
+  font-size: 13px; font-weight: 500;
+  color: var(--accent-blue);
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.file-input-label:hover {
+  background: rgba(0,180,255,0.16);
+}
+
+#file-input { display: none; }
+
+#file-name {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-family: var(--font-display);
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.analyze-btn {
+  padding: 10px 28px;
+  background: linear-gradient(135deg, var(--accent-blue), #0072ff);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 13px; font-weight: 700;
+  font-family: var(--font-body);
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  box-shadow: 0 4px 20px rgba(0,114,255,0.3);
+}
+
+.analyze-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 28px rgba(0,114,255,0.45);
+}
+
+.analyze-btn:active { transform: translateY(0); }
+
+/* ============================================================
+   CONTENT AREA
+   ============================================================ */
+.content {
+  padding: 32px;
+  flex: 1;
+}
+
+/* ============================================================
+   METRICS ROW
+   ============================================================ */
+.metrics-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.metric-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 20px 22px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  transition: all 0.3s;
+  animation: fadeUp 0.5s ease both;
+}
+
+.metric-card:hover {
+  border-color: var(--border-bright);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card);
+}
+
+.metric-card:nth-child(1) { animation-delay: 0.05s; }
+.metric-card:nth-child(2) { animation-delay: 0.10s; }
+.metric-card:nth-child(3) { animation-delay: 0.15s; }
+.metric-card:nth-child(4) { animation-delay: 0.20s; }
+
+.metric-icon {
+  width: 44px; height: 44px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.metric-icon.blue   { background: rgba(0,180,255,0.12); }
+.metric-icon.green  { background: rgba(0,230,118,0.12); }
+.metric-icon.yellow { background: rgba(255,214,0,0.12); }
+.metric-icon.red    { background: rgba(255,23,68,0.12); }
+
+.metric-data { flex: 1; }
+
+.metric-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 4px;
+  font-family: var(--font-display);
+}
+
+.metric-value {
+  font-size: 24px;
+  font-weight: 700;
+  font-family: var(--font-display);
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.metric-sub {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+/* ============================================================
+   MAIN GRID
+   ============================================================ */
+.main-grid {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+/* ============================================================
+   CARDS
+   ============================================================ */
 .card {
-    background: rgba(255,255,255,0.08);
-    backdrop-filter: blur(18px);
-    border-radius: 20px;
-    padding: 25px;
-    box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  box-shadow: var(--shadow-card);
+  animation: fadeUp 0.5s ease both;
+  transition: border-color 0.3s;
 }
 
-.large {
-    grid-column: span 2;
+.card:hover { border-color: var(--border-bright); }
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
 }
 
-.gauge-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-direction: column;
+.card-title {
+  font-size: 11px;
+  font-weight: 600;
+  font-family: var(--font-display);
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  display: flex; align-items: center; gap: 8px;
 }
 
-.gauge {
-    --risk-percentage: {{ risk_score }}%;
-    width: 200px;
-    height: 200px;
-    border-radius: 50%;
-    position: relative;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+.card-title::before {
+  content: '';
+  width: 3px; height: 14px;
+  background: var(--accent-blue);
+  border-radius: 2px;
+  box-shadow: 0 0 8px var(--accent-blue);
 }
 
-.gauge::before {
-    content: "";
-    width: 150px;
-    height: 150px;
-    background: #1b2735;
-    border-radius: 50%;
-    position: absolute;
+/* ============================================================
+   STORY CARD
+   ============================================================ */
+.story-summary-text {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.5;
+  margin-bottom: 16px;
 }
 
-.gauge-value {
-    position: absolute;
-    font-size: 32px;
-    font-weight: 700;
+.story-meta {
+  display: flex; gap: 12px; flex-wrap: wrap;
 }
 
-.badge {
-    margin-top: 15px;
-    padding: 8px 18px;
-    border-radius: 20px;
-    font-weight: 600;
+.story-tag {
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
-.GREEN { background: #28a745; }
-.YELLOW { background: #ffc107; color: black; }
-.RED { background: #dc3545; }
-
-.governance-block {
-    font-size: 22px;
-    font-weight: 700;
-    padding: 12px;
-    border-radius: 12px;
-    text-align: center;
+.tag-priority {
+  background: rgba(255,184,48,0.12);
+  border: 1px solid rgba(255,184,48,0.3);
+  color: var(--accent-gold);
 }
 
-.approve { background: #28a745; }
-.review { background: #ffc107; color: black; }
-.block { background: #dc3545; }
-
-.testcases-card {
-    display: flex;
-    flex-direction: column;
+.tag-env {
+  background: rgba(0,180,255,0.10);
+  border: 1px solid rgba(0,180,255,0.25);
+  color: var(--accent-blue);
 }
 
-.testcase-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+.tag-words {
+  background: rgba(122,155,191,0.10);
+  border: 1px solid rgba(122,155,191,0.2);
+  color: var(--text-secondary);
 }
 
-.download-buttons button {
-    margin-left: 6px;
-    padding: 6px 12px;
-    font-size: 13px;
+/* ============================================================
+   RISK GAUGE (SVG)
+   ============================================================ */
+.risk-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
-.testcase-list {
-    margin-top: 15px;
-    max-height: 400px;
-    overflow-y: auto;
+.gauge-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
 }
 
-/* Individual test case */
-.testcase-item {
-    background: rgba(255,255,255,0.05);
-    padding: 18px;
-    border-radius: 14px;
-    margin-bottom: 15px;
+.gauge-svg-container {
+  position: relative;
+  width: 200px; height: 200px;
 }
 
-.testcase-item h3 {
-    margin: 0 0 8px 0;
-    color: #60a5fa;
+.gauge-svg-container svg {
+  width: 200px; height: 200px;
 }
 
-.meta {
-    font-size: 13px;
-    margin-bottom: 10px;
-    color: #cbd5e1;
+.gauge-center-text {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
 }
 
-.gauge[data-risk-color="GREEN"] {
-    background: conic-gradient(#28a745 0%, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.08) 100%);
+.gauge-score {
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text-primary);
+  display: block;
+  line-height: 1;
 }
 
-.gauge[data-risk-color="YELLOW"] {
-    background: conic-gradient(#ffc107 0%, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.08) 100%);
+.gauge-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: var(--font-display);
+  letter-spacing: 0.08em;
 }
 
-.gauge[data-risk-color="RED"] {
-    background: conic-gradient(#dc3545 0%, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.08) 100%);
+.risk-badge {
+  padding: 8px 24px;
+  border-radius: 30px;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
+
+.badge-GREEN    { background: rgba(0,230,118,0.15); border: 1px solid rgba(0,230,118,0.4); color: var(--green); box-shadow: 0 0 20px rgba(0,230,118,0.15); }
+.badge-YELLOW   { background: rgba(255,214,0,0.15); border: 1px solid rgba(255,214,0,0.4); color: var(--yellow); box-shadow: 0 0 20px rgba(255,214,0,0.15); }
+.badge-RED      { background: rgba(255,23,68,0.15); border: 1px solid rgba(255,23,68,0.4); color: var(--red); box-shadow: 0 0 20px rgba(255,23,68,0.15); }
+.badge-CRITICAL { background: rgba(255,64,129,0.15); border: 1px solid rgba(255,64,129,0.4); color: var(--critical); box-shadow: 0 0 20px rgba(255,64,129,0.2); animation: glowPulse 2s infinite; }
+
+@keyframes glowPulse {
+  0%, 100% { box-shadow: 0 0 20px rgba(255,64,129,0.2); }
+  50%       { box-shadow: 0 0 35px rgba(255,64,129,0.45); }
+}
+
+.confidence-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.confidence-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: var(--font-display);
+  white-space: nowrap;
+}
+
+.confidence-bar-wrap {
+  flex: 1;
+  height: 4px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.confidence-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--accent-blue), var(--accent-cyan));
+  transition: width 1s ease;
+}
+
+.confidence-val {
+  font-size: 11px;
+  color: var(--accent-cyan);
+  font-family: var(--font-display);
+  white-space: nowrap;
+}
+
+/* ============================================================
+   COVERAGE RING
+   ============================================================ */
+.coverage-ring-wrap {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.coverage-ring-svg {
+  width: 80px; height: 80px;
+  flex-shrink: 0;
+}
+
+.coverage-info { flex: 1; }
+
+.coverage-pct {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.coverage-sublabel {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.coverage-bar-list { margin-top: 12px; }
+
+.coverage-bar-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.coverage-bar-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  width: 90px;
+  flex-shrink: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.coverage-bar-track {
+  flex: 1;
+  height: 4px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.coverage-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 1s ease;
+}
+
+.fill-covered   { background: linear-gradient(90deg, var(--green), var(--accent-cyan)); }
+.fill-missing   { background: linear-gradient(90deg, var(--red), #ff6b6b); }
+
+/* ============================================================
+   IMPACT GRID
+   ============================================================ */
+.impact-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.impact-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: rgba(0,180,255,0.04);
+  border: 1px solid rgba(0,180,255,0.08);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  color: var(--text-primary);
+  transition: all 0.2s;
+}
+
+.impact-item:hover {
+  background: rgba(0,180,255,0.09);
+  border-color: rgba(0,180,255,0.2);
+  transform: translateX(3px);
+}
+
+.impact-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--accent-blue);
+  box-shadow: 0 0 8px var(--accent-blue);
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   GOVERNANCE DECISION
+   ============================================================ */
+.gov-block {
+  border-radius: var(--radius-md);
+  padding: 20px;
+  text-align: center;
+  border: 1px solid transparent;
+}
+
+.gov-label {
+  font-size: 10px;
+  font-family: var(--font-display);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  opacity: 0.7;
+}
+
+.gov-decision {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.gov-APPROVE {
+  background: rgba(0,230,118,0.08);
+  border-color: rgba(0,230,118,0.3);
+  color: var(--green);
+  box-shadow: 0 0 30px rgba(0,230,118,0.1);
+}
+
+.gov-REVIEW {
+  background: rgba(255,214,0,0.08);
+  border-color: rgba(255,214,0,0.3);
+  color: var(--yellow);
+  box-shadow: 0 0 30px rgba(255,214,0,0.1);
+}
+
+.gov-BLOCK {
+  background: rgba(255,23,68,0.08);
+  border-color: rgba(255,23,68,0.3);
+  color: var(--red);
+  box-shadow: 0 0 30px rgba(255,23,68,0.12);
+  animation: glowPulseRed 2s infinite;
+}
+
+@keyframes glowPulseRed {
+  0%, 100% { box-shadow: 0 0 20px rgba(255,23,68,0.1); }
+  50%       { box-shadow: 0 0 40px rgba(255,23,68,0.25); }
+}
+
+/* ============================================================
+   BOTTOM GRID
+   ============================================================ */
+.bottom-grid {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 20px;
+}
+
+/* ============================================================
+   REVIEW PANEL
+   ============================================================ */
+.review-status-badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-family: var(--font-display);
+  font-weight: 700;
+}
+
+.review-PASS {
+  background: rgba(0,230,118,0.12);
+  border: 1px solid rgba(0,230,118,0.3);
+  color: var(--green);
+}
+
+.review-FAIL {
+  background: rgba(255,23,68,0.12);
+  border: 1px solid rgba(255,23,68,0.3);
+  color: var(--red);
+}
+
+.explanation-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.explanation-item {
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  line-height: 1.5;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.exp-missing {
+  background: rgba(255,23,68,0.06);
+  border: 1px solid rgba(255,23,68,0.15);
+  color: #ff8a9b;
+}
+
+.exp-warning {
+  background: rgba(255,214,0,0.06);
+  border: 1px solid rgba(255,214,0,0.15);
+  color: #ffd600;
+}
+
+.exp-info {
+  background: rgba(0,180,255,0.06);
+  border: 1px solid rgba(0,180,255,0.15);
+  color: #60c8ff;
+}
+
+.exp-icon { flex-shrink: 0; font-size: 13px; margin-top: 1px; }
+
+.recommendations-list {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.rec-item {
+  padding: 9px 14px;
+  background: rgba(0,255,209,0.04);
+  border: 1px solid rgba(0,255,209,0.1);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  color: var(--accent-cyan);
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+/* ============================================================
+   TEST CASES SECTION
+   ============================================================ */
+.testcases-section { animation-delay: 0.3s; }
+
+.testcase-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.filter-btn {
+  padding: 5px 14px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+}
+
+.filter-btn:hover, .filter-btn.active {
+  border-color: var(--accent-blue);
+  color: var(--accent-blue);
+  background: rgba(0,180,255,0.08);
+}
+
+.export-group {
+  display: flex;
+  gap: 8px;  margin-left: auto;
+}
+
+.export-btn {
+  padding: 7px 16px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid rgba(0,180,255,0.28);
+  background: rgba(0,180,255,0.06);
+  color: #00B4FF;
+  transition: all 0.2s;
+  font-family: 'DM Sans', sans-serif;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.export-btn:hover {
+  background: rgba(0,180,255,0.14);
+  border-color: #00B4FF;
+  transform: translateY(-1px);
+}
+
+.testcase-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 14px;
+  margin-top: 20px;
+  max-height: 520px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.testcase-grid::-webkit-scrollbar { width: 4px; }
+.testcase-grid::-webkit-scrollbar-thumb { background: rgba(0,180,255,0.28); border-radius: 2px; }
+
+.tc-card {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(0,180,255,0.10);
+  border-radius: 14px;
+  padding: 16px 18px;
+  transition: all 0.25s;
+  cursor: default;
+  position: relative;
+  overflow: hidden;
+}
+
+.tc-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 3px; height: 100%;
+  background: #00B4FF;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.tc-card:hover {
+  border-color: rgba(0,180,255,0.28);
+  background: rgba(0,180,255,0.04);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 40px rgba(0,0,0,0.6);
+}
+
+.tc-card:hover::before { opacity: 1; }
+.tc-card.priority-Critical::before { background: #FF1744; opacity: 0.7; }
+.tc-card.priority-High::before { background: #FFD600; opacity: 0.7; }
+.tc-card.priority-Medium::before { background: #00B4FF; opacity: 0.7; }
+
+.tc-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+.tc-id { font-family: 'Space Mono', monospace; font-size: 10px; color: #3D5A7A; letter-spacing: 0.08em; }
+.tc-priority { font-size: 10px; font-family: 'Space Mono', monospace; font-weight: 700; padding: 3px 10px; border-radius: 20px; }
+.prio-Critical { background: rgba(255,23,68,0.15); color: #FF1744; border: 1px solid rgba(255,23,68,0.3); }
+.prio-High { background: rgba(255,214,0,0.12); color: #FFD600; border: 1px solid rgba(255,214,0,0.3); }
+.prio-Medium { background: rgba(0,180,255,0.10); color: #00B4FF; border: 1px solid rgba(0,180,255,0.25); }
+.prio-Low { background: rgba(122,155,191,0.10); color: #7A9BBF; border: 1px solid rgba(0,180,255,0.10); }
+
+.tc-summary { font-size: 13px; font-weight: 600; color: #E8F4FF; line-height: 1.4; margin-bottom: 10px; }
+.tc-meta { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.tc-tag { font-size: 10px; color: #3D5A7A; background: rgba(255,255,255,0.04); border: 1px solid rgba(0,180,255,0.10); padding: 2px 8px; border-radius: 4px; font-family: 'Space Mono', monospace; }
+.tc-body { display: none; }
+.tc-card.expanded .tc-body { display: block; }
+.tc-section { margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(0,180,255,0.10); }
+.tc-section-label { font-size: 10px; font-family: 'Space Mono', monospace; color: #3D5A7A; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 5px; }
+.tc-section-text { font-size: 12px; color: #7A9BBF; line-height: 1.6; }
+.tc-expand-btn { font-size: 11px; color: #00B4FF; cursor: pointer; font-family: 'Space Mono', monospace; opacity: 0.7; transition: opacity 0.2s; margin-top: 8px; display: inline-block; }
+.tc-expand-btn:hover { opacity: 1; }
+
+.review-status-badge { padding: 4px 12px; border-radius: 20px; font-size: 11px; font-family: 'Space Mono', monospace; font-weight: 700; }
+.review-PASS { background: rgba(0,230,118,0.12); border: 1px solid rgba(0,230,118,0.3); color: #00E676; }
+.review-FAIL { background: rgba(255,23,68,0.12); border: 1px solid rgba(255,23,68,0.3); color: #FF1744; }
+
+.explanation-list { display: flex; flex-direction: column; gap: 8px; }
+.explanation-item { padding: 10px 14px; border-radius: 8px; font-size: 12px; line-height: 1.5; display: flex; gap: 10px; align-items: flex-start; }
+.exp-missing { background: rgba(255,23,68,0.06); border: 1px solid rgba(255,23,68,0.15); color: #ff8a9b; }
+.exp-warning { background: rgba(255,214,0,0.06); border: 1px solid rgba(255,214,0,0.15); color: #ffd600; }
+.exp-info { background: rgba(0,180,255,0.06); border: 1px solid rgba(0,180,255,0.15); color: #60c8ff; }
+.exp-icon { flex-shrink: 0; font-size: 13px; margin-top: 1px; }
+
+.rec-item { padding: 9px 14px; background: rgba(0,255,209,0.04); border: 1px solid rgba(0,255,209,0.1); border-radius: 8px; font-size: 12px; color: #00FFD1; display: flex; gap: 8px; align-items: flex-start; margin-top: 6px; }
+
+.empty-state { flex: 1; display: flex; align-items: center; justify-content: center; padding: 80px 32px; }
+.empty-inner { text-align: center; max-width: 480px; }
+.empty-graphic { width: 120px; height: 120px; margin: 0 auto 28px; background: #0D1E35; border: 1px solid rgba(0,180,255,0.10); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 48px; position: relative; }
+.empty-graphic::after { content: ''; position: absolute; inset: -8px; border-radius: 50%; border: 1px solid rgba(0,180,255,0.10); animation: orbit 8s linear infinite; }
+@keyframes orbit { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+.empty-title { font-family: 'Space Mono', monospace; font-size: 18px; color: #E8F4FF; margin-bottom: 10px; }
+.empty-sub { font-size: 14px; color: #3D5A7A; line-height: 1.6; }
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-thumb { background: rgba(0,180,255,0.28); border-radius: 3px; }
+
+@keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+
+[data-width] { width: var(--width); }
+[data-color="green"] { color: #00E676; }
+[data-color="yellow"] { color: #FFD600; }
+[data-color="red"] { color: #FF1744; }
+[data-color="critical"] { color: #FF4081; }
+
 </style>
-<script>
-    document.querySelectorAll('.gauge[data-risk-score]').forEach(el => {
-        const score = parseFloat(el.getAttribute('data-risk-score'));
-        const color = el.getAttribute('data-risk-color');
-        const colorMap = { 'GREEN': '#28a745', 'YELLOW': '#ffc107', 'RED': '#dc3545' };
-        const bgColor = colorMap[color] || '#dc3545';
-        el.style.background = `conic-gradient(${bgColor} 0% ${score}%, rgba(255,255,255,0.08) ${score}% 100%)`;
-    });
-</script>
 </head>
-
 <body>
 
-<h1>AI QA Overseas Engine - Risk Dashboard</h1>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="sidebar-logo">QA</div>
+    <div class="sidebar-icon active">⬡</div>
+    <div class="sidebar-icon">⊡</div>
+    <div class="sidebar-icon">⊞</div>
+    <div class="sidebar-icon">⊙</div>
+  </aside>
+  <div class="main">
+    <header class="topbar">
+      <div class="topbar-left">
+        <div class="status-dot"></div>
+        <span class="topbar-title">AI QA Risk Intelligence</span>
+        <span class="topbar-sep">/</span>
+        <span class="topbar-breadcrumb">Dashboard</span>
+      </div>
+      <div class="topbar-right">
+        <span class="engine-version">ENGINE v1.0.0</span>
+        <span class="engine-version" id="clock">--:--:--</span>
+      </div>
+    </header>
 
-<form action="/dashboard" method="post" enctype="multipart/form-data">
-    <input type="file" name="file" required>
-    <button type="submit">Analyze Story</button>
-</form>
-
-{% if risk_score is not none %}
-
-<div class="dashboard">
-
-    <div class="card large">
-        <h2>Story Summary</h2>
-        <p>{{ story_summary }}</p>
-    </div>
-
-    <div class="card">
-        <h2>Risk Assessment</h2>
-        <div class="gauge-container">
-            <div class="gauge" data-risk-color="{{ risk_color }}" data-risk-score="{{ risk_score }}">
-                <div class="gauge-value">{{ risk_score }}/100</div>
+    <div class="upload-zone">
+      <form action="/dashboard" method="post" enctype="multipart/form-data">
+        <div class="upload-inner">
+          <div class="upload-info">
+            <div class="upload-icon">📂</div>
+            <div class="upload-text">
+              <h3>Upload Jira Story XML</h3>
+              <p>Supports .xml files exported from Jira · Max 10MB</p>
             </div>
-            <div class="badge {{ risk_color }}">
-                {{ risk_level }}
+          </div>
+          <div class="upload-actions">
+            <label class="file-input-label" for="file-input">Choose File</label>
+            <input type="file" id="file-input" name="file" accept=".xml" required onchange="updateFileName(this)">
+            <span id="file-name">No file selected</span>
+            <button type="submit" class="analyze-btn">&#9654; Analyze</button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <div class="content">
+      {% if risk_score is not none %}
+      <div class="metrics-row">
+        <div class="metric-card"><div class="metric-icon blue">&#9889;</div><div class="metric-data"><div class="metric-label">Risk Score</div><div class="metric-value" id="m-risk">{{ risk_score }}</div><div class="metric-sub">out of 100</div></div></div>
+        <div class="metric-card"><div class="metric-icon green">&#10003;</div><div class="metric-data"><div class="metric-label">Coverage</div><div class="metric-value" id="m-cov">{{ coverage_score }}%</div><div class="metric-sub">test coverage</div></div></div>
+        <div class="metric-card"><div class="metric-icon yellow">&#11041;</div><div class="metric-data"><div class="metric-label">Test Cases</div><div class="metric-value">{{ test_cases | length }}</div><div class="metric-sub">generated</div></div></div>
+        <div class="metric-card"><div class="metric-icon blue">&#9672;</div><div class="metric-data"><div class="metric-label">Impact Areas</div><div class="metric-value">{{ impact_areas | length }}</div><div class="metric-sub">detected</div></div></div>
+      </div>
+      <div class="main-grid">
+        <div style="display:flex;flex-direction:column;gap:16px;">
+          <div class="card" style="animation-delay:0.1s">
+            <div class="card-header"><div class="card-title">Story Summary</div></div>
+            <div class="story-summary-text">{{ story_summary }}</div>
+            <div class="story-meta">
+              <span class="story-tag tag-priority">{{ priority }}</span>
+              <span class="story-tag tag-env">{{ environment }}</span>
+              <span class="story-tag tag-words">{{ word_count }} words</span>
+              <span class="story-tag tag-env">{{ channel }}</span>
             </div>
-            <p>Confidence: {{ confidence }}%</p>
-        </div>
-    </div>
-
-    <div class="card">
-        <h2>Coverage Score</h2>
-        <h1>{{ coverage_score }}%</h1>
-    </div>
-
-    <div class="card">
-        <h2>Impact Areas</h2>
-        <ul>
-            {% for item in impact_areas %}
-            <li>{{ item }}</li>
-            {% endfor %}
-        </ul>
-    </div>
-
-    <div class="card">
-        <h2>Governance Decision</h2>
-        <div class="governance-block
-            {% if governance_decision == 'APPROVE' %}approve
-            {% elif governance_decision == 'REVIEW' %}review
-            {% else %}block
-            {% endif %}">
-            {{ governance_decision }}
-        </div>
-    </div>
-
-    <!-- CLEAN TEST CASE DISPLAY -->
-    <div class="card large testcases-card">
-
-        <div class="testcase-header">
-            <h2>Generated Test Cases</h2>
-
-            <div class="download-buttons">
-                <a href="/export/pdf" target="_blank"><button>PDF</button></a>
-                <a href="/export/docx" target="_blank"><button>Word</button></a>
-                <a href="/export/excel" target="_blank"><button>Excel</button></a>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+            <div class="card" style="animation-delay:0.2s">
+              <div class="card-header"><div class="card-title">Impact Areas</div><span style="font-size:11px;color:var(--text-muted);font-family:var(--font-display)">{{ impact_areas | length }} detected</span></div>
+              <div class="impact-grid">
+                {% for item in impact_areas %}
+                <div class="impact-item"><div class="impact-dot"></div>{{ item }}</div>
+                {% endfor %}
+              </div>
             </div>
-        </div>
-
-        <div class="testcase-list">
-            {% for tc in test_cases %}
-            <div class="testcase-item">
-
-                <h3>{{ tc.test_case_id }} – {{ tc.summary }}</h3>
-
-                <div class="meta">
-                    Module: {{ tc.module }} |
-                    Channel: {{ tc.channel }} |
-                    Priority: {{ tc.priority }} |
-                    Type: {{ tc.test_type }}
+            <div class="card" style="animation-delay:0.25s">
+              <div class="card-header"><div class="card-title">Test Coverage</div></div>
+              <div class="coverage-ring-wrap">
+                <svg class="coverage-ring-svg" viewBox="0 0 80 80">
+                  <circle cx="40" cy="40" r="32" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="6"/>
+                  <circle cx="40" cy="40" r="32" fill="none"
+                    stroke="{% if coverage_score >= 80 %}#00E676{% elif coverage_score >= 60 %}#FFD600{% else %}#FF1744{% endif %}"
+                    stroke-width="6" stroke-linecap="round"
+                    stroke-dasharray="{{ (coverage_score / 100 * 201.06) | round(1) }} 201.06"
+                    transform="rotate(-90 40 40)"
+                    class="coverage-circle"
+                    data-color="{% if coverage_score >= 80 %}green{% elif coverage_score >= 60 %}yellow{% else %}red{% endif %}"/>
+                  <text x="40" y="44" text-anchor="middle" font-family="Space Mono" font-size="13" font-weight="700" fill="white">{{ coverage_score }}%</text>
+                </svg>
+                <div class="coverage-info">
+                  <div class="coverage-sublabel" style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;">
+                    {% if missing_areas %}{{ missing_areas | length }} area(s) need attention{% else %}All areas covered &#10003;{% endif %}
+                  </div>
+                  <div class="coverage-bar-list">
+                    {% for item in impact_areas[:3] %}
+                    <div class="coverage-bar-item">
+                      <div class="coverage-bar-label">{{ item.split(' ')[0] }}</div>
+                      <div class="coverage-bar-track"><div class="coverage-bar-fill {% if item in missing_areas %}fill-missing{% else %}fill-covered{% endif %}" data-width="{% if item in missing_areas %}25{% else %}90{% endif %}"></div></div>
+                    </div>
+                    {% endfor %}
+                  </div>
                 </div>
-
-                <p><strong>Precondition:</strong><br>
-                {{ tc.precondition }}</p>
-
-                <p><strong>Steps:</strong><br>
-                {{ tc.steps.replace('\n','<br>') | safe }}</p>
-
-                <p><strong>Expected Result:</strong><br>
-                {{ tc.expected_result }}</p>
-
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="risk-panel">
+          <div class="card" style="animation-delay:0.15s">
+            <div class="card-header"><div class="card-title">Risk Assessment</div></div>
+            <div class="gauge-wrap">
+              <div class="gauge-svg-container">
+                <svg viewBox="0 0 200 200">
+                  <circle cx="100" cy="100" r="80" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="12"/>
+                  <circle cx="100" cy="100" r="80" fill="none"
+                    stroke="{% if risk_color == 'GREEN' %}#00E676{% elif risk_color == 'YELLOW' %}#FFD600{% elif risk_color == 'RED' %}#FF1744{% else %}#FF4081{% endif %}"
+                    stroke-width="12" stroke-linecap="round"
+                    stroke-dasharray="{{ (risk_score / 100 * 502.65) | round(1) }} 502.65"
+                    transform="rotate(-90 100 100)"
+                    class="risk-circle"
+                    data-color="{% if risk_color == 'GREEN' %}green{% elif risk_color == 'YELLOW' %}yellow{% elif risk_color == 'RED' %}red{% else %}critical{% endif %}"/>
+                </svg>
+                <div class="gauge-center-text">
+                  <span class="gauge-score">{{ risk_score }}</span>
+                  <span class="gauge-label">/100</span>
+                </div>
+              </div>
+              <div class="risk-badge badge-{{ risk_color if risk_color else 'RED' }}">{{ risk_level }}</div>
+              <div class="confidence-row" style="margin-top:4px">
+                <span class="confidence-label">CONFIDENCE</span>
+                <div class="confidence-bar-wrap"><div class="confidence-bar-fill" data-width="{{ confidence }}"></div></div>
+                <span class="confidence-val">{{ confidence }}%</span>
+              </div>
+            </div>
+          </div>
+          <div class="card" style="animation-delay:0.2s">
+            <div class="card-header"><div class="card-title">Governance Decision</div></div>
+            <div class="gov-block gov-{{ governance_decision }}">
+              <div class="gov-label">Release Status</div>
+              <div class="gov-decision">
+                {% if governance_decision == 'APPROVE' %}&#10003; APPROVE
+                {% elif governance_decision == 'REVIEW' %}&#9888; REVIEW
+                {% else %}&#10005; BLOCKED{% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="bottom-grid">
+        <div class="card" style="animation-delay:0.3s">
+          <div class="card-header">
+            <div class="card-title">Generated Test Cases</div>
+            <div class="testcase-controls">
+              <button class="filter-btn active" onclick="filterTC('all',this)">All</button>
+              <button class="filter-btn" onclick="filterTC('Critical',this)">Critical</button>
+              <button class="filter-btn" onclick="filterTC('High',this)">High</button>
+              <div class="export-group">
+                <a href="/export/pdf" target="_blank" class="export-btn">&#11015; PDF</a>
+                <a href="/export/docx" target="_blank" class="export-btn">&#11015; Word</a>
+                <a href="/export/excel" target="_blank" class="export-btn">&#11015; Excel</a>
+              </div>
+            </div>
+          </div>
+          <div class="testcase-grid" id="tc-grid">
+            {% for tc in test_cases %}
+            <div class="tc-card priority-{{ tc.priority }}" data-priority="{{ tc.priority }}">
+              <div class="tc-top"><div class="tc-id">{{ tc.test_case_id }}</div><div class="tc-priority prio-{{ tc.priority }}">{{ tc.priority }}</div></div>
+              <div class="tc-summary">{{ tc.summary }}</div>
+              <div class="tc-meta"><span class="tc-tag">{{ tc.module }}</span><span class="tc-tag">{{ tc.channel }}</span><span class="tc-tag">{{ tc.test_type }}</span></div>
+              <span class="tc-expand-btn" onclick="toggleTC(this)">&#9662; Show details</span>
+              <div class="tc-body">
+                <div class="tc-section"><div class="tc-section-label">Precondition</div><div class="tc-section-text">{{ tc.precondition }}</div></div>
+                <div class="tc-section"><div class="tc-section-label">Steps</div><div class="tc-section-text">{{ tc.steps.replace('\n','<br>') | safe }}</div></div>
+                <div class="tc-section"><div class="tc-section-label">Expected Result</div><div class="tc-section-text">{{ tc.expected_result }}</div></div>
+              </div>
             </div>
             {% endfor %}
+          </div>
         </div>
-
+        <div class="card" style="animation-delay:0.35s">
+          <div class="card-header">
+            <div class="card-title">Coverage Review</div>
+            <span class="review-status-badge review-{{ review_status | default('PASS') }}">{{ review_status | default('PASS') }}</span>
+          </div>
+          {% if explanation %}
+          <div class="explanation-list">
+            {% for exp in explanation %}
+            <div class="explanation-item {% if 'MISSING' in exp %}exp-missing{% elif 'WEAK' in exp or 'WARNING' in exp %}exp-warning{% else %}exp-info{% endif %}">
+              <span class="exp-icon">{% if 'MISSING' in exp %}&#10005;{% elif 'WEAK' in exp or 'WARNING' in exp %}&#9888;{% else %}&#8505;{% endif %}</span>
+              <span>{{ exp }}</span>
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %}
+          {% if recommendations %}
+          <div class="recommendations-list">
+            {% for rec in recommendations %}
+            <div class="rec-item"><span>&#8594;</span><span>{{ rec }}</span></div>
+            {% endfor %}
+          </div>
+          {% endif %}
+          {% if not explanation and not recommendations %}
+          <div style="text-align:center;padding:20px 0;color:var(--text-muted);font-size:13px;">&#10003; All coverage checks passed</div>
+          {% endif %}
+        </div>
+      </div>
+      {% else %}
+      <div class="empty-state">
+        <div class="empty-inner">
+          <div class="empty-graphic">&#129504;</div>
+          <div class="empty-title">Ready to Analyze</div>
+          <div class="empty-sub">Upload a Jira XML story file above to run the full AI QA risk intelligence pipeline.</div>
+        </div>
+      </div>
+      {% endif %}
     </div>
-
+  </div>
 </div>
 
-{% endif %}
-
+<script>
+function updateClock(){const n=new Date();document.getElementById('clock').textContent=n.toTimeString().slice(0,8);}
+setInterval(updateClock,1000);updateClock();
+function updateFileName(input){document.getElementById('file-name').textContent=input.files[0]?input.files[0].name:'No file selected';}
+function toggleTC(btn){const card=btn.closest('.tc-card');card.classList.toggle('expanded');btn.textContent=card.classList.contains('expanded')?'\u25B4 Hide details':'\u25BE Show details';}
+function filterTC(priority,btn){document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');document.querySelectorAll('.tc-card').forEach(card=>{card.style.display=(priority==='all'||card.dataset.priority===priority)?'':'none';});}
+function animateCounter(el,target,suffix){let start=0;const step=(ts)=>{if(!start)start=ts;const p=Math.min((ts-start)/1000,1);el.textContent=Math.round(p*target)+(suffix||'');if(p<1)requestAnimationFrame(step);};requestAnimationFrame(step);}
+document.addEventListener('DOMContentLoaded',()=>{const r=document.getElementById('m-risk');const c=document.getElementById('m-cov');if(r)animateCounter(r,parseInt(r.textContent),'');if(c)animateCounter(c,parseInt(c.textContent),'%');document.querySelectorAll('[data-width]').forEach(el=>{el.style.width=el.dataset.width+'%';});});
+</script>
 </body>
 </html>

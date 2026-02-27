@@ -25,7 +25,7 @@ app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 
 # Store latest result (in-memory for dashboard)
-latest_result = {"test_cases": []}
+latest_result = {"test_cases": [], "risk_score": None}
 
 
 # ============================
@@ -42,7 +42,8 @@ def health_check():
 @app.get("/dashboard", response_class=HTMLResponse)
 async def dashboard_page(request: Request):
     return templates.TemplateResponse("dashboard.html", {
-        "request": request
+        "request": request,
+        **latest_result
     })
 
 
