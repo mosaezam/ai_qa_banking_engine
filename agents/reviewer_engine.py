@@ -1,44 +1,78 @@
-def review_coverage(impact, test_cases):
+def review_coverage(impact, test_cases, risk_level=None):
 
     coverage_score = 100
     missing_areas = []
     explanation = []
+    recommendations = []
 
-    impact_keywords = {
-        "Core Banking Impact": ["debit", "ledger", "reconciliation", "posting"],
-        "API Contract Impact": ["api", "payload", "response", "schema"],
-        "Financial Calculation Impact": ["sst", "calculation", "total", "fee"],
-        "Feature Flag Impact": ["rmbp", "dcc", "feature flag"],
-        "High Complexity Story": ["boundary", "limit", "validation"],
+    impact_weights = {
+        "Core Banking Impact": {"keywords": ["debit", "ledger", "reconciliation", "posting"], "weight": 25},
+        "API Contract Impact": {"keywords": ["api", "payload", "response", "schema"], "weight": 20},
+        "Financial Calculation Impact": {"keywords": ["sst", "calculation", "total", "fee", "rounding"], "weight": 20},
+        "Feature Flag Impact": {"keywords": ["rmbp", "dcc", "feature flag", "toggle"], "weight": 15},
+        "High Complexity Story": {"keywords": ["boundary", "limit", "validation", "edge case"], "weight": 20},
     }
 
-    for area, keywords in impact_keywords.items():
-
+    # Check each impacted area
+    for area, config in impact_weights.items():
         if area in impact:
+            keywords = config["keywords"]
+            weight = config["weight"]
 
-            found = any(
-                any(
+            matched_tcs = [
+                tc for tc in test_cases
+                if any(
                     keyword in (
-                        tc.get("summary", "").lower()
-                        + " "
-                        + tc.get("steps", "").lower()
-                        + " "
-                        + tc.get("expected_result", "").lower()
+                        tc.get("summary", "").lower() + " " +
+                        tc.get("steps", "").lower() + " " +
+                        tc.get("expected_result", "").lower()
                     )
                     for keyword in keywords
                 )
-                for tc in test_cases
-            )
+            ]
 
-            if not found:
-                coverage_score -= 20
+            if not matched_tcs:
+                coverage_score -= weight
                 missing_areas.append(area)
                 explanation.append(
-                    f"{area} detected but no test case contains keywords: {keywords}"
+                    f"MISSING: {area} has no test coverage. Expected keywords: {keywords}"
                 )
+                recommendations.append(
+                    f"Add test cases covering {area} — focus on: {', '.join(keywords)}"
+                )
+            elif len(matched_tcs) == 1 and risk_level in ["HIGH", "CRITICAL"]:
+                # Only 1 test for a high risk area — flag it
+                coverage_score -= round(weight / 2)
+                explanation.append(
+                    f"WEAK: {area} has only 1 test case. Risk level is {risk_level} — more coverage needed."
+                )
+                recommendations.append(
+                    f"Expand {area} test cases — add negative, boundary, and error scenario tests."
+                )
+
+    # Check for missing negative tests
+    has_negative = any(
+        any(word in tc.get("summary", "").lower() for word in ["negative", "invalid", "zero", "reject", "fail", "error"])
+        for tc in test_cases
+    )
+    if not has_negative:
+        coverage_score -= 10
+        explanation.append("MISSING: No negative test cases found.")
+        recommendations.append("Add negative test cases — invalid inputs, zero values, boundary violations.")
+
+    # Check for missing critical priority if risk is high
+    if risk_level in ["HIGH", "CRITICAL"]:
+        has_critical = any(tc.get("priority") == "Critical" for tc in test_cases)
+        if not has_critical:
+            coverage_score -= 10
+            explanation.append(f"WARNING: Risk level is {risk_level} but no Critical priority test cases exist.")
+            recommendations.append("Escalate at least 2 test cases to Critical priority.")
 
     return {
         "coverage_score": max(coverage_score, 0),
         "missing_areas": missing_areas,
-        "explanation": explanation
+        "explanation": explanation,
+        "recommendations": recommendations,
+        "total_test_cases": len(test_cases),
+        "review_status": "PASS" if coverage_score >= 80 else "FAIL"
     }

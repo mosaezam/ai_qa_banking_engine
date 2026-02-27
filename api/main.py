@@ -29,6 +29,14 @@ latest_result = {"test_cases": []}
 
 
 # ============================
+# HEALTH CHECK
+# ============================
+@app.get("/health")
+def health_check():
+    return {"status": "ok", "version": "1.0.0"}
+
+
+# ============================
 # GET DASHBOARD
 # ============================
 @app.get("/dashboard", response_class=HTMLResponse)
@@ -47,70 +55,77 @@ async def analyze_dashboard(request: Request, file: UploadFile = File(...)):
 
     os.makedirs("reports", exist_ok=True)
 
-    temp_path = f"temp_{file.filename}"
+    temp_path = None
 
-    with open(temp_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+    try:
+        temp_path = f"temp_{file.filename}"
 
-    # Run engine
-    story = parse_jira_xml(temp_path)
-    config = load_config("config.yaml")
-    impact = analyze_impact(story)
+        with open(temp_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
 
-    module_name = "bakong" if "bakong" in story["summary"].lower() else "ftt"
-    code_risk = scan_codebase(module_name)
+        # Run engine
+        story = parse_jira_xml(temp_path)
+        config = load_config("config.yaml")
+        impact = analyze_impact(story)
 
-    risk_score, risk_level, confidence = calculate_risk_score(impact, story, code_risk)
-    risk_color = get_risk_color(risk_score)
+        module_name = "bakong" if "bakong" in story["summary"].lower() else "ftt"
+        code_risk = scan_codebase(module_name)
 
-    test_cases = generate_test_cases(
-        story,
-        impact,
-        config,
-        code_risk,
-        risk_score,
-        risk_level
-    )
+        risk_score, risk_level, confidence = calculate_risk_score(impact, story, code_risk)
+        risk_color = get_risk_color(risk_score)
 
-    review = review_coverage(impact, test_cases)
+        test_cases = generate_test_cases(
+            story,
+            impact,
+            config,
+            code_risk,
+            risk_score,
+            risk_level
+        )
 
-    governance = apply_governance_rules(
-        risk_score=risk_score,
-        coverage_score=review["coverage_score"],
-        environment=config.get("environment")
-    )
+        review = review_coverage(impact, test_cases, risk_level)
 
-    os.remove(temp_path)
+        governance = apply_governance_rules(
+            risk_score=risk_score,
+            coverage_score=review["coverage_score"],
+            environment=config.get("environment")
+        )
 
-    # ============================
-    # SAVE EXECUTION REPORT
-    # ============================
-    latest_result = {
-        "engine_version": "1.0.0",
-        "channel": "MAE",
-        "environment": config.get("environment"),
-        "story_summary": story["summary"],
-        "priority": story.get("priority", "Medium"),
-        "word_count": story["word_count"],
-        "impact_areas": impact,
-        "risk_score": risk_score,
-        "risk_level": risk_level,
-        "risk_color": risk_color,
-        "confidence": confidence,
-        "coverage_score": review["coverage_score"],
-        "missing_areas": review["missing_areas"],
-        "explanation": review["explanation"],
-        "governance_decision": governance.get("decision", "REVIEW"),
-        "test_cases": test_cases
-    }
+        # ============================
+        # SAVE EXECUTION REPORT
+        # ============================
+        latest_result = {
+            "engine_version": "1.0.0",
+            "channel": "MAE",
+            "environment": config.get("environment"),
+            "story_summary": story["summary"],
+            "priority": story.get("priority", "Medium"),
+            "word_count": story["word_count"],
+            "impact_areas": impact,
+            "risk_score": risk_score,
+            "risk_level": risk_level,
+            "risk_color": risk_color,
+            "confidence": confidence,
+            "coverage_score": review["coverage_score"],
+            "missing_areas": review["missing_areas"],
+            "explanation": review["explanation"],
+            "recommendations": review.get("recommendations", []),
+            "review_status": review.get("review_status", "FAIL"),
+            "governance_decision": governance.get("decision", "REVIEW"),
+            "test_cases": test_cases
+        }
 
-    with open("reports/execution_report.json", "w") as f:
-        json.dump(latest_result, f, indent=4)
+        with open("reports/execution_report.json", "w") as f:
+            json.dump(latest_result, f, indent=4)
 
-    return templates.TemplateResponse("dashboard.html", {
-        "request": request,
-        **latest_result
-    })
+        return templates.TemplateResponse("dashboard.html", {
+            "request": request,
+            **latest_result
+        })
+
+    finally:
+        if temp_path and os.path.exists(temp_path):
+            os.remove(temp_path)
 
 
 # ============================
@@ -139,7 +154,6 @@ def export_pdf():
         <b>Steps:</b> {tc['steps']}<br/>
         <b>Expected:</b> {tc['expected_result']}<br/><br/>
         """
-
         elements.append(Paragraph(content, styles["Normal"]))
         elements.append(Spacer(1, 0.2 * inch))
 
