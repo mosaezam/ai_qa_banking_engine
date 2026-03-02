@@ -7,6 +7,7 @@ import json
 
 from agents.xml_parser import parse_jira_xml
 from agents.code_scanner import scan_codebase
+from agents.module_detector import detect_module_and_channel, get_module_description
 from agents.impact_engine import analyze_impact
 from agents.generator_engine import generate_test_cases
 from agents.reviewer_engine import review_coverage
@@ -69,7 +70,7 @@ async def analyze_dashboard(request: Request, file: UploadFile = File(...)):
         config = load_config("config.yaml")
         impact = analyze_impact(story)
 
-        module_name = "bakong" if "bakong" in story["summary"].lower() else "ftt"
+        module_name, channel_name = detect_module_and_channel(story)
         code_risk = scan_codebase(module_name)
 
         risk_score, risk_level, confidence = calculate_risk_score(impact, story, code_risk)
@@ -97,7 +98,7 @@ async def analyze_dashboard(request: Request, file: UploadFile = File(...)):
         # ============================
         latest_result = {
             "engine_version": "1.0.0",
-            "channel": "MAE",
+            "channel": channel_name,
             "environment": config.get("environment"),
             "story_summary": story["summary"],
             "priority": story.get("priority", "Medium"),
