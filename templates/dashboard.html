@@ -330,6 +330,71 @@ body::after {
 
 .analyze-btn:active { transform: translateY(0); }
 
+/* GitHub repo URL row */
+.repo-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.repo-row-icon {
+  width: 32px; height: 32px;
+  background: rgba(0,255,209,0.08);
+  border: 1px solid rgba(0,255,209,0.2);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+  color: var(--accent-cyan);
+  flex-shrink: 0;
+}
+
+.repo-url-input {
+  flex: 1;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font-size: 13px;
+  font-family: var(--font-display);
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.repo-url-input::placeholder { color: var(--text-muted); }
+
+.repo-url-input:focus {
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 0 3px rgba(0,255,209,0.08);
+}
+
+/* Repo info badge */
+.repo-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  background: rgba(0,255,209,0.06);
+  border: 1px solid rgba(0,255,209,0.18);
+  border-radius: 20px;
+  font-size: 11px;
+  font-family: var(--font-display);
+  color: var(--accent-cyan);
+}
+
+.repo-error {
+  padding: 5px 12px;
+  background: rgba(255,23,68,0.06);
+  border: 1px solid rgba(255,23,68,0.18);
+  border-radius: 20px;
+  font-size: 11px;
+  font-family: var(--font-display);
+  color: #ff8a9b;
+}
+
 /* ============================================================
    CONTENT AREA
    ============================================================ */
@@ -1024,7 +1089,7 @@ body::after {
         <span class="topbar-breadcrumb">Dashboard</span>
       </div>
       <div class="topbar-right">
-        <span class="engine-version">ENGINE v1.0.0</span>
+        <span class="engine-version">ENGINE v2.0.0</span>
         <span class="engine-version" id="clock">--:--:--</span>
       </div>
     </header>
@@ -1035,22 +1100,52 @@ body::after {
           <div class="upload-info">
             <div class="upload-icon">📂</div>
             <div class="upload-text">
-              <h3>Upload Jira Story XML</h3>
-              <p>Supports .xml files exported from Jira · Max 10MB</p>
+              <h3>Upload User Story (XML)</h3>
+              <p>Supports .xml files exported from Jira or any issue tracker · Max 10MB</p>
             </div>
           </div>
           <div class="upload-actions">
             <label class="file-input-label" for="file-input">Choose File</label>
             <input type="file" id="file-input" name="file" accept=".xml" required onchange="updateFileName(this)">
             <span id="file-name">No file selected</span>
-            <button type="submit" class="analyze-btn">&#9654; Analyze</button>
           </div>
+        </div>
+        <div class="repo-row">
+          <div class="repo-row-icon">&#9663;</div>
+          <input
+            type="text"
+            name="repo_url"
+            class="repo-url-input"
+            placeholder="GitHub Repo URL (optional) — https://github.com/owner/repo"
+            value="{{ repo_url or '' }}"
+          >
+          <button type="submit" class="analyze-btn">&#9654; Analyze</button>
         </div>
       </form>
     </div>
 
     <div class="content">
       {% if risk_score is not none %}
+
+      {% if repo_info %}
+      <div class="card" style="margin-bottom:20px;animation-delay:0s;padding:16px 24px;">
+        <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+          <div style="font-size:11px;font-family:var(--font-display);color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;">GitHub Repository</div>
+          {% if repo_info.error %}
+          <span class="repo-error">&#9888; {{ repo_info.error }}</span>
+          {% else %}
+          <span class="repo-badge">&#9670; {{ repo_info.repo_name }}</span>
+          <span style="font-size:11px;color:var(--text-secondary);font-family:var(--font-display);">{{ repo_info.total_files_scanned }} source files scanned</span>
+          {% if repo_info.scanned_files %}
+          <span style="font-size:11px;color:var(--text-muted);">
+            {% for f in repo_info.scanned_files[:5] %}{{ f }}{% if not loop.last %} &nbsp;·&nbsp; {% endif %}{% endfor %}{% if repo_info.scanned_files|length > 5 %} &nbsp;+{{ repo_info.scanned_files|length - 5 }} more{% endif %}
+          </span>
+          {% endif %}
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+
       <div class="metrics-row">
         <div class="metric-card"><div class="metric-icon blue">&#9889;</div><div class="metric-data"><div class="metric-label">Risk Score</div><div class="metric-value" id="m-risk">{{ risk_score }}</div><div class="metric-sub">out of 100</div></div></div>
         <div class="metric-card"><div class="metric-icon green">&#10003;</div><div class="metric-data"><div class="metric-label">Coverage</div><div class="metric-value" id="m-cov">{{ coverage_score }}%</div><div class="metric-sub">test coverage</div></div></div>
@@ -1213,7 +1308,7 @@ body::after {
         <div class="empty-inner">
           <div class="empty-graphic">&#129504;</div>
           <div class="empty-title">Ready to Analyze</div>
-          <div class="empty-sub">Upload a Jira XML story file above to run the full AI QA risk intelligence pipeline.</div>
+          <div class="empty-sub">Upload a user story XML file and optionally paste a GitHub repo URL to run the full AI QA risk intelligence pipeline on any project.</div>
         </div>
       </div>
       {% endif %}

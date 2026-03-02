@@ -2,21 +2,21 @@ from agents.module_detector import (
     detect_module_and_channel,
     get_module_description,
     get_module_compliance,
-    get_module_limits
+    get_module_limits,
 )
 
 
-def generate_test_cases(story, impact, config, code_risk=None, risk_score=None, risk_level=None):
+def generate_test_cases(story, impact, _config, code_risk=None, _risk_score=None, _risk_level=None):
 
-    # =========================================
-    # MODULE DETECTION
-    # =========================================
+    # ─────────────────────────────────────────────
+    # MODULE / DOMAIN DETECTION
+    # ─────────────────────────────────────────────
     module_name, channel = detect_module_and_channel(story)
     module = module_name.upper()
     module_desc = get_module_description(module_name)
     compliance_list = get_module_compliance(module_name)
     limits = get_module_limits(module_name)
-    tx_limit = limits.get("transaction", 50000)
+    tx_limit = limits.get("transaction", 10000)
     daily_limit = limits.get("daily", 50000)
 
     test_cases = []
@@ -33,340 +33,618 @@ def generate_test_cases(story, impact, config, code_risk=None, risk_score=None, 
             "summary": summary,
             "priority": priority,
             "test_type": test_type,
-            "precondition": f"User is logged into {channel} with valid credentials and sufficient balance for {module_desc}",
+            "precondition": (
+                f"User is authenticated in {channel} with valid credentials "
+                f"and required permissions for {module_desc}"
+            ),
             "steps": steps,
-            "expected_result": expected
+            "expected_result": expected,
         }
 
-    # =========================================
-    # SECTION 1 — USER STORY FLOW (Always)
-    # =========================================
+    # ═══════════════════════════════════════════════════════════════
+    # SECTION 1 — CORE USER STORY FLOW (Always Generated)
+    # ═══════════════════════════════════════════════════════════════
 
     test_cases.append(tc(
-        summary=f"[STORY] Verify end-to-end {module} transfer — New Transfer",
-        steps=f"1. Login to {channel}\n2. Navigate: Transfer > Overseas > {module_desc}\n3. Select New Transfer\n4. Enter valid recipient details\n5. Enter valid amount\n6. Review confirmation screen\n7. Authenticate via Secure2u\n8. Submit",
-        expected="Transaction completes. Reference number generated. Receipt page shows all transfer details.",
-        priority="Critical"
+        summary=f"[STORY] Verify end-to-end happy path — {module_desc}",
+        steps=(
+            f"1. Authenticate in {channel}\n"
+            f"2. Navigate to the {module_desc} feature\n"
+            "3. Enter all required inputs with valid data\n"
+            "4. Review confirmation/preview screen\n"
+            "5. Submit and complete the action"
+        ),
+        expected=(
+            "Action completes successfully. "
+            "Confirmation/reference number is generated. "
+            "Success screen shows all relevant details."
+        ),
+        priority="Critical",
     ))
 
     test_cases.append(tc(
-        summary=f"[STORY] Verify {module} favourite transfer flow",
-        steps=f"1. Login to {channel}\n2. Navigate: Transfer > Overseas > {module_desc}\n3. Select Favourite Transfer\n4. Select saved recipient\n5. Enter amount\n6. Confirm and submit",
-        expected="Favourite transfer completes successfully using pre-saved recipient details",
-        priority="High"
+        summary=f"[STORY] Verify {module_desc} with saved/recent data",
+        steps=(
+            f"1. Authenticate in {channel}\n"
+            f"2. Navigate to {module_desc}\n"
+            "3. Select from previously saved / recent entries\n"
+            "4. Review pre-filled details\n"
+            "5. Confirm and submit"
+        ),
+        expected=(
+            "Saved data loads correctly with all fields pre-populated. "
+            "Submission succeeds with expected outcome."
+        ),
+        priority="High",
     ))
 
     test_cases.append(tc(
-        summary=f"[STORY] Verify {module} confirmation page shows all required fields",
-        steps="1. Enter valid transfer details\n2. Proceed to confirmation screen\n3. Check all fields present",
-        expected="Confirmation shows: Principal, Service Fee, SST, Agent Fee, Total Amount, Recipient Name, Reference, Exchange Rate",
-        priority="Critical"
+        summary=f"[STORY] Verify confirmation screen shows all required information",
+        steps=(
+            "1. Enter valid input for all fields\n"
+            "2. Proceed to confirmation/preview step\n"
+            "3. Verify every field and label is present and correct"
+        ),
+        expected=(
+            "Confirmation screen displays: all input data, summary totals, "
+            "reference details, and action description. No data is missing or truncated."
+        ),
+        priority="Critical",
     ))
 
     test_cases.append(tc(
-        summary=f"[STORY] Verify {module} receipt page generated after successful transfer",
-        steps="1. Complete successful transfer\n2. Click PDF on receipt\n3. Verify all fields on receipt",
-        expected="Receipt shows: Reference No, Date/Time, Amount, Fee breakdown, SST, Recipient details, Status: SUCCESS",
-        priority="High"
+        summary=f"[STORY] Verify success/receipt screen after completing {module_desc}",
+        steps=(
+            "1. Complete the full flow successfully\n"
+            "2. Review the success / receipt screen\n"
+            "3. Verify all details match the submitted data"
+        ),
+        expected=(
+            "Receipt/success screen shows: reference number, timestamp, "
+            "summary of action, status as SUCCESS. All values match what was submitted."
+        ),
+        priority="High",
     ))
 
     test_cases.append(tc(
-        summary=f"[STORY] Verify {module} transaction visible in M2U transaction history",
-        steps="1. Complete transfer\n2. Navigate to Transaction History / Statement\n3. Locate the transaction",
-        expected="History shows: Amount, Fee, SST, Date, Reference No, Status, Recipient",
-        priority="High"
+        summary=f"[STORY] Verify {module_desc} activity visible in history/audit log",
+        steps=(
+            "1. Complete the action successfully\n"
+            "2. Navigate to history / activity log\n"
+            "3. Locate and verify the entry"
+        ),
+        expected=(
+            "History shows the entry with correct: amount/value, date/time, "
+            "reference number, status, and relevant details."
+        ),
+        priority="High",
     ))
 
-    # =========================================
-    # SECTION 2 — FINANCIAL CALCULATION IMPACT
-    # =========================================
+    # ═══════════════════════════════════════════════════════════════
+    # SECTION 2 — FINANCIAL / PAYMENT CALCULATION IMPACT
+    # ═══════════════════════════════════════════════════════════════
 
     if "Financial Calculation Impact" in impact or (code_risk and code_risk.get("fee_logic", 0) > 0):
 
         test_cases.append(tc(
-            summary=f"[FIN] Verify SST 8% calculated correctly on service fee",
-            steps="1. Enter transfer amount with applicable service fee\n2. Proceed to confirmation\n3. Verify: SST = Service Fee × 8%",
-            expected="SST = exactly 8% of Service Fee. Rounded to 2 decimal places. Displayed as separate line item.",
-            priority="Critical", test_type="Financial"
+            summary="[FIN] Verify fee/charge calculation is mathematically correct",
+            steps=(
+                "1. Enter an amount with applicable fees/charges\n"
+                "2. Proceed to confirmation screen\n"
+                "3. Manually calculate expected total\n"
+                "4. Compare with displayed total"
+            ),
+            expected=(
+                "Displayed fee/charge equals the expected calculated amount. "
+                "Rounded to 2 decimal places with no floating-point errors."
+            ),
+            priority="Critical", test_type="Financial",
         ))
 
         test_cases.append(tc(
-            summary=f"[FIN] Verify total amount = Principal + Service Fee + SST(SF) + Agent Fee + SST(AF)",
-            steps="1. Enter amount with charges\n2. On confirmation: manually calculate total\n3. Compare with displayed total",
-            expected="Total Amount = Principal + Service Fee + 8% SST on Service Fee + Agent Fee + 8% SST on Agent Fee",
-            priority="Critical", test_type="Financial"
+            summary="[FIN] Verify total amount = sum of all individual components",
+            steps=(
+                "1. Enter amount with multiple fee components\n"
+                "2. On confirmation screen, manually verify: principal + all charges = total\n"
+                "3. Compare with displayed grand total"
+            ),
+            expected=(
+                "Total Amount = Principal + all applicable fees and taxes. "
+                "All line items individually visible. Sum matches grand total."
+            ),
+            priority="Critical", test_type="Financial",
         ))
 
         test_cases.append(tc(
-            summary=f"[FIN] Verify BAU flow when NO charges applicable",
-            steps="1. Initiate transfer with zero service fee\n2. Check confirmation screen",
-            expected="Service Fee = RM 0.00. Agent Fee = RM 0.00. SST lines NOT displayed. Total = Principal only. BAU unchanged.",
-            priority="High", test_type="Financial"
+            summary="[FIN] Verify zero-charge scenario behaves correctly",
+            steps=(
+                "1. Initiate action where no fees are applicable\n"
+                "2. Check confirmation screen"
+            ),
+            expected=(
+                "Fee lines show 0.00 or are hidden. "
+                "Total = principal only. No incorrect charge applied."
+            ),
+            priority="High", test_type="Financial",
         ))
 
         test_cases.append(tc(
-            summary=f"[FIN] Verify fee rounding with decimal transfer amounts",
-            steps="1. Enter RM 1234.56\n2. Check fee on confirmation\n3. Verify 2 decimal rounding",
-            expected="Fee rounded to exactly 2 decimal places. No floating point errors. Consistent across all screens.",
-            priority="High", test_type="Financial"
+            summary="[FIN] Verify rounding with decimal input amounts",
+            steps=(
+                "1. Enter an amount with multiple decimal places (e.g. 1234.567)\n"
+                "2. Check calculated fee and total on confirmation"
+            ),
+            expected=(
+                "All monetary values rounded correctly to 2 decimal places. "
+                "Consistent rounding across all screens."
+            ),
+            priority="High", test_type="Financial",
         ))
 
         test_cases.append(tc(
-            summary=f"[FIN] Verify S2U screen shows total amount labelled (Includes 8% SST)",
-            steps="1. Initiate transfer with charges\n2. Reach S2U screen\n3. Verify total amount label",
-            expected="S2U shows: Total Amount (Includes 8% SST) = Principal + All Fees + All SST amounts",
-            priority="Critical", test_type="Financial"
+            summary="[FIN] Verify payment/charge breakdown is visible on confirmation screen",
+            steps=(
+                "1. Initiate with applicable charges\n"
+                "2. Reach confirmation screen\n"
+                "3. Verify each line item is labelled and displayed"
+            ),
+            expected=(
+                "All fee components displayed as separate labelled line items. "
+                "Grand total clearly indicated."
+            ),
+            priority="High", test_type="Financial",
         ))
 
-        test_cases.append(tc(
-            summary=f"[FIN] Verify agent/beneficiary bank fee SST line item added",
-            steps="1. Initiate transfer with agent fee applicable\n2. Check confirmation screen",
-            expected="New line: '8% SST on Agent Fee' displayed separately. Amount = Agent Fee × 8%",
-            priority="Critical", test_type="Financial"
-        ))
-
-    # =========================================
-    # SECTION 3 — UI FRONTEND IMPACT
-    # =========================================
+    # ═══════════════════════════════════════════════════════════════
+    # SECTION 3 — UI / FRONTEND IMPACT
+    # ═══════════════════════════════════════════════════════════════
 
     if "UI Frontend Impact" in impact:
 
         test_cases.append(tc(
-            summary=f"[UI] Verify SST tooltip text updated on transfer details screen",
-            steps="1. Navigate to {module_desc} transfer details\n2. Click info/tooltip icon next to Agent/Beneficiary Bank Fee\n3. Read tooltip content",
-            expected="Tooltip: 'If an agent/beneficiary bank fee is applicable, the fee (inclusive of 8% SST) will be paid from your local accounts during the transfer details later.'",
-            priority="High", test_type="UI"
+            summary="[UI] Verify all required fields and labels are displayed correctly",
+            steps=(
+                f"1. Navigate to {module_desc} in {channel}\n"
+                "2. Check all visible fields have correct labels\n"
+                "3. Verify no field is missing or misaligned"
+            ),
+            expected=(
+                "All required fields visible with correct labels. "
+                "No missing, overlapping, or broken UI elements."
+            ),
+            priority="High", test_type="UI",
         ))
 
         test_cases.append(tc(
-            summary=f"[UI] Verify (Includes 8% SST) label appears only when charges applicable",
-            steps="1. Test with transfer having charges — verify SST label shown\n2. Test with zero charge transfer — verify SST label NOT shown",
-            expected="SST label conditional: shown only when fee > 0. Hidden for zero-charge transfers.",
-            priority="Critical", test_type="UI"
+            summary="[UI] Verify conditional display logic — elements shown/hidden correctly",
+            steps=(
+                "1. Test with condition that should show element — verify it appears\n"
+                "2. Test with condition that should hide element — verify it is absent"
+            ),
+            expected=(
+                "Conditional UI elements appear only when their condition is met. "
+                "Hidden when condition is not met."
+            ),
+            priority="Critical", test_type="UI",
         ))
 
         test_cases.append(tc(
-            summary=f"[UI] Verify all new SST field labels displayed on confirmation page",
-            steps="1. Complete transfer details with charges\n2. On confirmation: verify all new labels",
-            expected="Labels present: 'Service Fee', '8% SST on Service Fee', 'Agent Fee', '8% SST on Agent Fee', 'Total Amount (Includes 8% SST)'",
-            priority="High", test_type="UI"
+            summary="[UI] Verify responsive layout renders correctly across screen sizes",
+            steps=(
+                "1. Open feature on desktop browser\n"
+                "2. Resize to tablet viewport\n"
+                "3. Resize to mobile viewport\n"
+                "4. Check layout at each size"
+            ),
+            expected=(
+                "Layout adapts correctly at each viewport. "
+                "No overlapping elements, no horizontal scroll on mobile."
+            ),
+            priority="Medium", test_type="UI",
         ))
 
-    # =========================================
+    # ═══════════════════════════════════════════════════════════════
     # SECTION 4 — FEATURE FLAG IMPACT
-    # =========================================
+    # ═══════════════════════════════════════════════════════════════
 
     if "Feature Flag Impact" in impact:
 
         test_cases.append(tc(
-            summary="[FLAG] DCC=ON RMBP=ON — SST displayed in UI and SST deducted in backend",
-            steps="1. Set DCC flag = ON in backend config\n2. Set RMBP flag = ON in frontend config\n3. Initiate transfer with service fee\n4. Check confirmation screen for SST label\n5. Complete transfer\n6. Verify amount deducted from account",
-            expected="Frontend: SST label shown with '(Includes 8% SST)'. Backend: SST amount correctly deducted. Total = Principal + Fee + SST.",
-            priority="Critical", test_type="Feature Flag"
+            summary="[FLAG] Verify feature enabled: correct behaviour when flag is ON",
+            steps=(
+                "1. Set feature flag to ON/enabled in configuration\n"
+                "2. Navigate to the affected feature\n"
+                "3. Verify expected behaviour is active"
+            ),
+            expected=(
+                "Feature behaves as designed when enabled. "
+                "All new functionality accessible and working correctly."
+            ),
+            priority="Critical", test_type="Feature Flag",
         ))
 
         test_cases.append(tc(
-            summary="[FLAG] DCC=OFF RMBP=OFF — No SST in UI and no SST deducted (Full BAU)",
-            steps="1. Set DCC flag = OFF\n2. Set RMBP flag = OFF\n3. Initiate transfer\n4. Check confirmation — no SST label\n5. Complete transfer\n6. Verify deducted amount",
-            expected="Frontend: No SST label shown anywhere. Backend: No SST deducted. Total = Principal + Fee only. Full BAU behaviour.",
-            priority="Critical", test_type="Feature Flag"
+            summary="[FLAG] Verify feature disabled: BAU behaviour when flag is OFF",
+            steps=(
+                "1. Set feature flag to OFF/disabled\n"
+                "2. Navigate to the affected feature\n"
+                "3. Verify BAU (before-feature) behaviour is restored"
+            ),
+            expected=(
+                "Original BAU behaviour when flag is OFF. "
+                "No new feature elements visible or active."
+            ),
+            priority="Critical", test_type="Feature Flag",
         ))
 
         test_cases.append(tc(
-            summary="[FLAG] DCC=ON RMBP=OFF — SST NOT shown in UI but SST IS silently deducted (CRITICAL RISK)",
-            steps="1. Set DCC = ON, RMBP = OFF\n2. Initiate transfer\n3. Confirm screen — verify NO SST label shown\n4. Complete transfer\n5. Check actual amount deducted from account\n6. Compare displayed total vs actual deduction",
-            expected="Frontend: No SST label (RMBP=OFF hides UI). Backend: SST silently deducted (DCC=ON charges backend). Actual deduction = Principal + Fee + SST even though SST not visible to customer.",
-            priority="Critical", test_type="Feature Flag"
+            summary="[FLAG] Verify flags are independent — toggling one does not affect another",
+            steps=(
+                "1. Toggle flag A ON, keep flag B OFF — verify each behaves independently\n"
+                "2. Toggle flag B ON, keep flag A OFF — verify no cross-contamination"
+            ),
+            expected=(
+                "Each flag controls only its own scope. "
+                "No unintended side effects when toggling flags independently."
+            ),
+            priority="High", test_type="Feature Flag",
         ))
 
         test_cases.append(tc(
-            summary="[FLAG] DCC=OFF RMBP=ON — SST shown in UI but NO SST deducted in backend",
-            steps="1. Set DCC = OFF, RMBP = ON\n2. Initiate transfer\n3. Check if SST label appears on screen\n4. Complete transfer\n5. Verify actual amount deducted",
-            expected="Frontend may show SST label (RMBP=ON). Backend: NO SST deducted (DCC=OFF). Actual deduction = Principal + Fee only. No mismatch between displayed and charged amount.",
-            priority="Critical", test_type="Feature Flag"
+            summary="[FLAG] Verify feature rollout does not break existing functionality",
+            steps=(
+                "1. Enable the feature flag\n"
+                "2. Run regression on all existing features in the module\n"
+                "3. Verify no existing flows are broken"
+            ),
+            expected=(
+                "All pre-existing features continue to work correctly. "
+                "No regressions introduced by enabling the flag."
+            ),
+            priority="Critical", test_type="Feature Flag",
         ))
 
-        test_cases.append(tc(
-            summary="[FLAG] Verify DCC flag controls backend SST calculation independently",
-            steps="1. Toggle DCC ON — verify SST calculated in backend\n2. Toggle DCC OFF — verify no SST in backend\n3. Keep RMBP unchanged throughout",
-            expected="DCC exclusively controls backend SST deduction. Changing RMBP has zero effect on backend calculation.",
-            priority="High", test_type="Feature Flag"
-        ))
-
-        test_cases.append(tc(
-            summary="[FLAG] Verify RMBP flag controls frontend SST display independently",
-            steps="1. Toggle RMBP ON — verify SST label shown on all screens\n2. Toggle RMBP OFF — verify SST label hidden\n3. Keep DCC unchanged throughout",
-            expected="RMBP exclusively controls frontend SST visibility. Changing DCC has zero effect on UI display.",
-            priority="High", test_type="Feature Flag"
-        ))
-
-    # =========================================
+    # ═══════════════════════════════════════════════════════════════
     # SECTION 5 — API CONTRACT IMPACT
-    # =========================================
+    # ═══════════════════════════════════════════════════════════════
 
     if "API Contract Impact" in impact or (code_risk and code_risk.get("validations", 0) > 0):
 
         test_cases.append(tc(
-            summary=f"[API] Verify API request payload includes all required fields",
-            steps="1. Initiate transfer\n2. Capture API request\n3. Verify all mandatory fields present in payload",
-            expected="API payload contains: amount, currency, recipient, fee, sst, channel, moduleType, referenceNo",
-            priority="High", test_type="API"
+            summary="[API] Verify API request payload includes all required fields",
+            steps=(
+                "1. Initiate the action\n"
+                "2. Capture the outbound API request\n"
+                "3. Verify all mandatory fields are present with correct data types"
+            ),
+            expected=(
+                "API payload contains all required fields with correct types and values. "
+                "No missing or null mandatory fields."
+            ),
+            priority="High", test_type="API",
         ))
 
         test_cases.append(tc(
-            summary=f"[API] Verify API response schema matches expected contract",
-            steps="1. Complete transfer\n2. Capture API response\n3. Verify response fields",
-            expected="Response contains: status, referenceNo, transactionId, totalAmount, feeBreakdown, timestamp",
-            priority="High", test_type="API"
+            summary="[API] Verify API response schema matches the expected contract",
+            steps=(
+                "1. Execute a successful action\n"
+                "2. Capture the API response\n"
+                "3. Validate response fields against the API contract/specification"
+            ),
+            expected=(
+                "Response contains all documented fields with correct data types. "
+                "No undocumented fields added without notice."
+            ),
+            priority="High", test_type="API",
         ))
 
         test_cases.append(tc(
-            summary=f"[API] Verify backward compatibility — existing fields unchanged",
-            steps="1. Call API with existing request format\n2. Verify existing response fields still present",
-            expected="All existing API fields unchanged. New SST fields added. No breaking changes.",
-            priority="Critical", test_type="API"
+            summary="[API] Verify backward compatibility — existing API fields unchanged",
+            steps=(
+                "1. Call the API with the existing request format\n"
+                "2. Verify all existing response fields still present and unchanged"
+            ),
+            expected=(
+                "All pre-existing API fields remain unchanged. "
+                "New fields added additively. No breaking changes."
+            ),
+            priority="Critical", test_type="API",
         ))
 
-    # =========================================
-    # SECTION 6 — MIDDLEWARE / GATEWAY IMPACT
-    # =========================================
+        test_cases.append(tc(
+            summary="[API] Verify API returns correct HTTP status codes",
+            steps=(
+                "1. Test success scenario — verify 200/201\n"
+                "2. Test invalid input — verify 400\n"
+                "3. Test unauthorized — verify 401/403\n"
+                "4. Test not found — verify 404"
+            ),
+            expected=(
+                "Correct HTTP status codes returned for each scenario. "
+                "Error responses include descriptive message body."
+            ),
+            priority="High", test_type="API",
+        ))
+
+    # ═══════════════════════════════════════════════════════════════
+    # SECTION 6 — MIDDLEWARE / INTEGRATION IMPACT
+    # ═══════════════════════════════════════════════════════════════
 
     if "Middleware ESB Impact" in impact or (code_risk and code_risk.get("error_handling", 0) > 0):
 
         test_cases.append(tc(
-            summary=f"[MW] Verify gateway timeout handling and retry mechanism",
-            steps="1. Simulate gateway timeout\n2. Submit transfer\n3. Observe retry behaviour",
-            expected="System auto-retries up to configured limit. If all retries fail: transaction rolled back, user notified.",
-            priority="Critical", test_type="Error Handling"
+            summary="[MW] Verify timeout handling and automatic retry mechanism",
+            steps=(
+                "1. Simulate a downstream service timeout\n"
+                "2. Submit the action\n"
+                "3. Observe system retry behaviour"
+            ),
+            expected=(
+                "System retries up to the configured limit. "
+                "If all retries fail: action is rolled back and user is notified."
+            ),
+            priority="Critical", test_type="Error Handling",
         ))
 
         test_cases.append(tc(
-            summary=f"[MW] Verify ESB routing to correct {module} backend service",
-            steps="1. Submit {module} transfer\n2. Verify request routed to correct backend\n3. Check response",
-            expected="ESB routes to {module_desc} service. Correct backend processes the transaction.",
-            priority="High", test_type="Integration"
+            summary="[MW] Verify routing to correct downstream service",
+            steps=(
+                f"1. Submit a {module_desc} action\n"
+                "2. Verify request is routed to the correct backend/service\n"
+                "3. Confirm correct response is returned"
+            ),
+            expected=(
+                f"Request routed to the {module_desc} service. "
+                "Correct backend processes the request and returns expected response."
+            ),
+            priority="High", test_type="Integration",
         ))
 
         test_cases.append(tc(
-            summary=f"[MW] Verify duplicate transaction not posted on retry",
-            steps="1. Submit transfer\n2. Simulate timeout\n3. System retries\n4. Check if duplicate posted",
-            expected="Idempotency key prevents duplicate posting. Only one ledger entry created even after retry.",
-            priority="Critical", test_type="Data Integrity"
+            summary="[MW] Verify no duplicate processing on retry",
+            steps=(
+                "1. Submit action\n"
+                "2. Simulate a timeout mid-process\n"
+                "3. System auto-retries\n"
+                "4. Verify no duplicate record is created"
+            ),
+            expected=(
+                "Idempotency mechanism prevents duplicate processing. "
+                "Only one record/entry created even after retry."
+            ),
+            priority="Critical", test_type="Data Integrity",
         ))
 
-    # =========================================
-    # SECTION 7 — CORE BANKING IMPACT
-    # =========================================
+    # ═══════════════════════════════════════════════════════════════
+    # SECTION 7 — CORE BANKING / DATA INTEGRITY IMPACT
+    # ═══════════════════════════════════════════════════════════════
 
     if "Core Banking Impact" in impact:
 
         test_cases.append(tc(
-            summary=f"[CORE] Verify ledger debit posting — correct amount deducted",
-            steps="1. Note balance before transfer\n2. Complete transfer\n3. Check account balance after",
-            expected="Balance reduced by exactly: Principal + Service Fee + SST + Agent Fee. No extra deductions.",
-            priority="Critical", test_type="Financial"
+            summary="[CORE] Verify data is persisted correctly after successful submission",
+            steps=(
+                "1. Note state before action\n"
+                "2. Complete action successfully\n"
+                "3. Query database / verify in system"
+            ),
+            expected=(
+                "Data saved accurately with all fields. "
+                "Values match exactly what was submitted. "
+                "No data truncation or corruption."
+            ),
+            priority="Critical", test_type="Data Integrity",
         ))
 
         test_cases.append(tc(
-            summary=f"[CORE] Verify transaction rollback on core banking failure",
-            steps="1. Simulate core banking failure mid-transaction\n2. Check account balance\n3. Check transaction history",
-            expected="Transaction rolled back completely. Balance unchanged. No partial posting. Error shown to user.",
-            priority="Critical", test_type="Data Integrity"
+            summary="[CORE] Verify full rollback on processing failure",
+            steps=(
+                "1. Simulate a backend failure mid-transaction\n"
+                "2. Check system state after failure\n"
+                "3. Verify records and balances"
+            ),
+            expected=(
+                "Transaction rolled back completely. "
+                "System state unchanged from before the attempt. "
+                "No partial data committed. Error message shown to user."
+            ),
+            priority="Critical", test_type="Data Integrity",
         ))
 
         test_cases.append(tc(
-            summary=f"[CORE] Verify ledger entry includes SST breakdown",
-            steps="1. Complete transfer with SST charges\n2. Check core banking ledger entry",
-            expected="Ledger has separate entries for: Principal, Service Fee, SST on Service Fee, Agent Fee, SST on Agent Fee",
-            priority="High", test_type="Financial"
+            summary="[CORE] Verify ledger/audit entry created with complete breakdown",
+            steps=(
+                "1. Complete action with multiple data components\n"
+                "2. Check the audit/ledger record created"
+            ),
+            expected=(
+                "Record includes separate entries for each component. "
+                "All amounts and metadata recorded accurately."
+            ),
+            priority="High", test_type="Data Integrity",
         ))
 
-    # =========================================
-    # SECTION 8 — VALIDATION IMPACT
-    # =========================================
+    # ═══════════════════════════════════════════════════════════════
+    # SECTION 8 — VALIDATION / INPUT IMPACT
+    # ═══════════════════════════════════════════════════════════════
 
     if "Validation Impact" in impact or (code_risk and code_risk.get("validations", 0) > 0):
 
         test_cases.append(tc(
-            summary=f"[VAL] Verify all mandatory fields validated before submission",
-            steps="1. Leave each mandatory field empty one at a time\n2. Attempt submission after each",
-            expected="Each empty mandatory field triggers inline validation error. Submission blocked.",
-            priority="High", test_type="Validation"
+            summary="[VAL] Verify all mandatory fields are validated before submission",
+            steps=(
+                "1. Leave each mandatory field empty one at a time\n"
+                "2. Attempt to submit after each empty field\n"
+                "3. Verify inline validation message appears"
+            ),
+            expected=(
+                "Each empty mandatory field triggers an inline validation error. "
+                "Submission blocked until all required fields are filled."
+            ),
+            priority="High", test_type="Validation",
         ))
 
         test_cases.append(tc(
-            summary=f"[VAL] Verify special characters rejected in text fields",
-            steps="1. Enter <script>, SQL injection, emoji in name fields\n2. Attempt submission",
-            expected="Special characters sanitised or rejected. No XSS or injection vulnerabilities.",
-            priority="High", test_type="Security"
+            summary="[VAL] Verify special characters and injection attempts are rejected",
+            steps=(
+                "1. Enter HTML special characters (&lt;, &gt;, &amp;) in text fields\n"
+                "2. Enter SQL injection patterns (e.g. ' OR 1=1 --)\n"
+                "3. Attempt submission"
+            ),
+            expected=(
+                "Special characters sanitised or rejected. "
+                "No XSS, SQL injection, or other injection vulnerabilities."
+            ),
+            priority="High", test_type="Security",
         ))
 
         test_cases.append(tc(
-            summary=f"[VAL] Verify amount field accepts only valid numeric format",
-            steps="1. Enter letters in amount field\n2. Enter negative number\n3. Enter valid decimal",
-            expected="Letters rejected. Negative rejected. Valid decimal accepted up to 2 decimal places.",
-            priority="High", test_type="Validation"
+            summary="[VAL] Verify amount/numeric field accepts only valid format",
+            steps=(
+                "1. Enter alphabetic characters in numeric field\n"
+                "2. Enter negative number\n"
+                "3. Enter a valid positive decimal"
+            ),
+            expected=(
+                "Alphabetic input rejected. Negative numbers rejected. "
+                "Valid positive decimals accepted up to allowed precision."
+            ),
+            priority="High", test_type="Validation",
         ))
 
-    # =========================================
-    # SECTION 9 — LIMIT BOUNDARY IMPACT
-    # =========================================
+        test_cases.append(tc(
+            summary="[VAL] Verify field-level format validation (email, phone, ID, etc.)",
+            steps=(
+                "1. Enter incorrectly formatted value in each format-constrained field\n"
+                "2. Attempt submission\n"
+                "3. Enter correctly formatted value and retry"
+            ),
+            expected=(
+                "Invalid format triggers inline error with clear guidance. "
+                "Valid format passes validation. Submission proceeds."
+            ),
+            priority="Medium", test_type="Validation",
+        ))
+
+    # ═══════════════════════════════════════════════════════════════
+    # SECTION 9 — LIMIT / BOUNDARY IMPACT
+    # ═══════════════════════════════════════════════════════════════
 
     if "Limit Boundary Impact" in impact or (code_risk and code_risk.get("limit_checks", 0) > 0):
 
+        below = max(tx_limit - 1, 1) if tx_limit else 9999
+        at = tx_limit if tx_limit else 10000
+        above = (tx_limit + 1) if tx_limit else 10001
+
         test_cases.append(tc(
-            summary=f"[LIMIT] Verify transfer within limit accepted (RM {tx_limit - 1:,})",
-            steps=f"1. Enter RM {tx_limit - 1:,}\n2. Submit transfer",
-            expected=f"Transfer accepted. No limit error. Proceeds to confirmation.",
-            priority="Critical", test_type="Boundary"
+            summary=f"[LIMIT] Verify action within limit is accepted ({below:,})",
+            steps=(
+                f"1. Enter value {below:,} (one below the limit)\n"
+                "2. Submit the action"
+            ),
+            expected="Action accepted. No limit error. Proceeds to confirmation.",
+            priority="Critical", test_type="Boundary",
         ))
 
         test_cases.append(tc(
-            summary=f"[LIMIT] Verify transfer at exact limit accepted (RM {tx_limit:,})",
-            steps=f"1. Enter exactly RM {tx_limit:,}\n2. Submit transfer",
-            expected=f"Transfer accepted at exact limit of RM {tx_limit:,}.",
-            priority="Critical", test_type="Boundary"
+            summary=f"[LIMIT] Verify action at exact limit is accepted ({at:,})",
+            steps=(
+                f"1. Enter exactly {at:,} (at the defined limit)\n"
+                "2. Submit the action"
+            ),
+            expected=f"Action accepted at exact limit of {at:,}.",
+            priority="Critical", test_type="Boundary",
         ))
 
         test_cases.append(tc(
-            summary=f"[LIMIT] Verify transfer above limit rejected (RM {tx_limit + 1:,})",
-            steps=f"1. Enter RM {tx_limit + 1:,}\n2. Submit transfer",
-            expected=f"Transfer rejected. Error: 'Amount exceeds transaction limit of RM {tx_limit:,}'",
-            priority="Critical", test_type="Boundary"
+            summary=f"[LIMIT] Verify action above limit is rejected ({above:,})",
+            steps=(
+                f"1. Enter {above:,} (one above the limit)\n"
+                "2. Submit the action"
+            ),
+            expected=f"Action rejected. Error message shown: 'Exceeds limit of {at:,}'.",
+            priority="Critical", test_type="Boundary",
+        ))
+
+        if daily_limit:
+            test_cases.append(tc(
+                summary=f"[LIMIT] Verify accumulated daily limit blocks further actions",
+                steps=(
+                    f"1. Complete actions totalling {daily_limit:,}\n"
+                    "2. Attempt one more action"
+                ),
+                expected=(
+                    f"Further action rejected. Error: 'Daily limit of {daily_limit:,} reached.'"
+                ),
+                priority="High", test_type="Boundary",
+            ))
+
+    # ═══════════════════════════════════════════════════════════════
+    # SECTION 10 — COMPLIANCE / SECURITY IMPACT
+    # ═══════════════════════════════════════════════════════════════
+
+    if (
+        "AML Compliance Impact" in impact
+        or "Security Impact" in impact
+        or "AML" in compliance_list
+        or "PCI_DSS" in compliance_list
+    ):
+
+        test_cases.append(tc(
+            summary="[SEC] Verify access control — unauthorised user cannot access feature",
+            steps=(
+                "1. Attempt to access the feature without authentication\n"
+                "2. Attempt with a user lacking required permissions\n"
+                "3. Verify in both cases"
+            ),
+            expected=(
+                "Unauthenticated request redirected to login. "
+                "Insufficient permissions returns 403 Forbidden. "
+                "No data is leaked."
+            ),
+            priority="Critical", test_type="Security",
         ))
 
         test_cases.append(tc(
-            summary=f"[LIMIT] Verify daily limit accumulation blocks further transfers",
-            steps=f"1. Complete transfers totalling RM {daily_limit:,}\n2. Attempt one more transfer",
-            expected=f"Further transfer rejected. Error: 'Daily limit of RM {daily_limit:,} reached. Try again tomorrow.'",
-            priority="High", test_type="Boundary"
+            summary="[SEC] Verify sensitive data is masked in UI and logs",
+            steps=(
+                "1. Complete the action\n"
+                "2. Check UI fields for sensitive data (passwords, card numbers, IDs)\n"
+                "3. Check application logs"
+            ),
+            expected=(
+                "Sensitive fields are masked in the UI (e.g. ****1234). "
+                "No sensitive data in plaintext in logs."
+            ),
+            priority="Critical", test_type="Security",
         ))
 
-    # =========================================
-    # SECTION 10 — AML COMPLIANCE IMPACT
-    # =========================================
+        if "AML Compliance Impact" in impact or "AML" in compliance_list:
+            test_cases.append(tc(
+                summary="[AML] Verify sanctions/compliance screening before processing",
+                steps=(
+                    "1. Enter a party name/ID that triggers a compliance flag\n"
+                    "2. Submit the action\n"
+                    "3. Observe result"
+                ),
+                expected=(
+                    "System screens against compliance lists before processing. "
+                    "Flagged entry is rejected with audit log created."
+                ),
+                priority="Critical", test_type="Compliance",
+            ))
 
-    if "AML Compliance Impact" in impact or "AML" in compliance_list or "OFAC" in compliance_list:
-
-        test_cases.append(tc(
-            summary=f"[AML] Verify OFAC sanctions screening before transaction processed",
-            steps="1. Enter recipient name matching OFAC list\n2. Submit transfer\n3. Observe result",
-            expected="System screens against OFAC before processing. Sanctioned recipient rejected with error. Audit logged.",
-            priority="Critical", test_type="Compliance"
-        ))
-
-        test_cases.append(tc(
-            summary=f"[AML] Verify source of funds declaration triggered for high amounts",
-            steps="1. Enter amount at AML threshold\n2. Check if declaration screen appears",
-            expected="Source of funds declaration mandatory at configured threshold. Cannot proceed without completion.",
-            priority="Critical", test_type="Compliance"
-        ))
-
-        test_cases.append(tc(
-            summary=f"[AML] Verify purpose of transfer mandatory field",
-            steps="1. Attempt submission without purpose of transfer\n2. Select valid purpose and retry",
-            expected="Purpose of transfer mandatory. Valid options listed. Cannot submit without selection.",
-            priority="High", test_type="Compliance"
-        ))
+            test_cases.append(tc(
+                summary="[AML] Verify declaration/purpose field is mandatory for high-risk actions",
+                steps=(
+                    "1. Attempt submission without completing the required declaration\n"
+                    "2. Complete declaration and retry"
+                ),
+                expected=(
+                    "Submission blocked without declaration. "
+                    "Valid declaration allows submission to proceed."
+                ),
+                priority="High", test_type="Compliance",
+            ))
 
     return test_cases

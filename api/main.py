@@ -1,12 +1,13 @@
-from fastapi import FastAPI, Request, UploadFile, File
+from fastapi import FastAPI, Request, UploadFile, File, Form
 from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.templating import Jinja2Templates
 import shutil
 import os
+import uuid
 import json
 
 from agents.xml_parser import parse_jira_xml
-from agents.code_scanner import scan_codebase
+from agents.github_scanner import scan_github_repo
 from agents.module_detector import detect_module_and_channel, get_module_description
 from agents.impact_engine import analyze_impact
 from agents.generator_engine import generate_test_cases
@@ -35,7 +36,7 @@ latest_result = {"test_cases": [], "risk_score": None}
 # ============================
 @app.get("/health")
 def health_check():
-    return {"status": "ok", "version": "1.0.0"}
+    return {"status": "ok", "version": "2.0.0"}
 
 
 # ============================
@@ -53,52 +54,82 @@ async def dashboard_page(request: Request):
 # POST → RUN ENGINE
 # ============================
 @app.post("/dashboard")
-async def analyze_dashboard(request: Request, file: UploadFile = File(...)):
+async def analyze_dashboard(
+    request: Request,
+    file: UploadFile = File(...),
+    repo_url: str = Form(""),
+):
     global latest_result
 
     os.makedirs("reports", exist_ok=True)
+    os.makedirs("temp_uploads", exist_ok=True)
 
     temp_path = None
 
     try:
-        temp_path = f"temp_{file.filename}"
+        # Save uploaded file with a unique name to avoid collisions
+        unique_name = f"{uuid.uuid4()}.xml"
+        temp_path = os.path.join("temp_uploads", unique_name)
 
         with open(temp_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
 
-        # Run engine
+        # ── Parse story ──────────────────────────────────────────
         story = parse_jira_xml(temp_path)
         config = load_config("config.yaml")
         impact = analyze_impact(story)
 
+        # ── Module / channel detection ───────────────────────────
         module_name, channel_name = detect_module_and_channel(story)
-        code_risk = scan_codebase(module_name)
 
+        # ── GitHub code scan (optional) ──────────────────────────
+        repo_info = None
+        if repo_url and repo_url.strip():
+            github_result = scan_github_repo(repo_url.strip())
+            repo_info = {
+                "repo_name": github_result.get("repo_name"),
+                "total_files_scanned": github_result.get("total_files_scanned", 0),
+                "scanned_files": github_result.get("scanned_files", []),
+                "error": github_result.get("error"),
+            }
+            raw_signals = github_result.get("risk_signals", {})
+            # Map generic signals to the format expected by the ML risk predictor
+            code_risk = {
+                "validations":    raw_signals.get("validations", 0),
+                "fee_logic":      raw_signals.get("payment_logic", 0),
+                "limit_checks":   raw_signals.get("limit_checks", 0),
+                "error_handling": raw_signals.get("error_handling", 0),
+            }
+        else:
+            code_risk = {"validations": 0, "fee_logic": 0, "limit_checks": 0, "error_handling": 0}
+
+        # ── Risk scoring ─────────────────────────────────────────
         risk_score, risk_level, confidence = calculate_risk_score(impact, story, code_risk)
         risk_color = get_risk_color(risk_score)
 
+        # ── Test case generation ─────────────────────────────────
         test_cases = generate_test_cases(
             story,
             impact,
             config,
             code_risk,
             risk_score,
-            risk_level
+            risk_level,
         )
 
+        # ── Coverage review ──────────────────────────────────────
         review = review_coverage(impact, test_cases, risk_level)
 
+        # ── Governance ───────────────────────────────────────────
         governance = apply_governance_rules(
             risk_score=risk_score,
             coverage_score=review["coverage_score"],
-            environment=config.get("environment")
+            environment=config.get("environment"),
         )
 
-        # ============================
-        # SAVE EXECUTION REPORT
-        # ============================
+        # ── Build result ─────────────────────────────────────────
         latest_result = {
-            "engine_version": "1.0.0",
+            "engine_version": "2.0.0",
             "channel": channel_name,
             "environment": config.get("environment"),
             "story_summary": story["summary"],
@@ -115,7 +146,9 @@ async def analyze_dashboard(request: Request, file: UploadFile = File(...)):
             "recommendations": review.get("recommendations", []),
             "review_status": review.get("review_status", "FAIL"),
             "governance_decision": governance.get("decision", "REVIEW"),
-            "test_cases": test_cases
+            "test_cases": test_cases,
+            "repo_info": repo_info,
+            "repo_url": repo_url.strip() if repo_url else None,
         }
 
         with open("reports/execution_report.json", "w") as f:
@@ -200,7 +233,7 @@ def export_docx():
     return FileResponse(
         file_path,
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        filename="test_cases.docx"
+        filename="test_cases.docx",
     )
 
 
@@ -220,17 +253,9 @@ def export_excel():
     ws.title = "Test Cases"
 
     headers = [
-        "Test Case ID",
-        "Module",
-        "Channel",
-        "Summary",
-        "Priority",
-        "Test Type",
-        "Precondition",
-        "Steps",
-        "Expected Result"
+        "Test Case ID", "Module", "Channel", "Summary",
+        "Priority", "Test Type", "Precondition", "Steps", "Expected Result",
     ]
-
     ws.append(headers)
 
     for tc in latest_result["test_cases"]:
@@ -251,5 +276,5 @@ def export_excel():
     return FileResponse(
         file_path,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        filename="test_cases.xlsx"
+        filename="test_cases.xlsx",
     )

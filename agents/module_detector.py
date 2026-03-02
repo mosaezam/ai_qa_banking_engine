@@ -1,73 +1,136 @@
 # ============================================================
 # agents/module_detector.py
-# Dynamic Module & Channel Detector — MAE Overseas Transfers
-# Supports: BAKONG, FTT, MOT, WESTERNUNION, VISADIRECT, EIPO
+# Generic Domain & Channel Detector — works for any project
+# Detects: payment, authentication, user_management, api_integration,
+#          notification, reporting, data_management, security,
+#          ui_feature, search
 # ============================================================
 
-OVERSEAS_MODULES = {
-    "bakong": {
-        "keywords": ["bakong", "cambodia", "nbc", "khmer", "riel", "phnom penh"],
-        "description": "Bakong Cross-Border Transfer (Cambodia)",
-        "folder": "bakong",
+SOFTWARE_DOMAINS = {
+    "payment": {
+        "keywords": [
+            "payment", "transfer", "transaction", "checkout", "billing",
+            "invoice", "fee", "charge", "wallet", "refund", "subscription",
+            "order", "cart", "banking", "overseas", "wire", "swift",
+            "remittance", "fintech", "debit", "credit", "bank",
+        ],
+        "description": "Payment / Financial Transaction",
         "risk_profile": "HIGH",
-        "limits": {"transaction": 50000, "daily": 50000},
-        "compliance": ["SST", "BNM_FX", "FATF"]
+        "limits": {"transaction": 100000, "daily": 500000},
     },
-    "ftt": {
-        "keywords": ["ftt", "fund transfer", "ibft", "interbank", "duitnow",
-                     "instant transfer", "rentas", "giro"],
-        "description": "Fund Transfer & Transaction (Local Interbank)",
-        "folder": "ftt",
+    "authentication": {
+        "keywords": [
+            "login", "logout", "auth", "jwt", "oauth", "session",
+            "password", "token", "sso", "2fa", "otp", "mfa",
+            "credential", "signup", "register", "forgot password",
+            "reset password", "secure2u", "s2u",
+        ],
+        "description": "Authentication & Authorization",
         "risk_profile": "HIGH",
-        "limits": {"transaction": 100000, "daily": 100000},
-        "compliance": ["SST", "BNM_RENTAS", "FATF"]
+        "limits": {"attempts": 5, "session_timeout": 3600},
     },
-    "mot": {
-        "keywords": ["mot", "maybank overseas", "overseas transfer", "telegraphic",
-                     "tt transfer", "swift transfer", "wire transfer", "foreign transfer",
-                     "international transfer", "remittance", "iban"],
-        "description": "Maybank Overseas Transfer (MOT)",
-        "folder": "mot",
+    "user_management": {
+        "keywords": [
+            "user", "profile", "account", "registration", "customer",
+            "member", "kyc", "onboarding", "identity", "personal",
+            "preferences", "settings",
+        ],
+        "description": "User Management",
+        "risk_profile": "MEDIUM",
+        "limits": {},
+    },
+    "api_integration": {
+        "keywords": [
+            "api", "integration", "webhook", "endpoint", "microservice",
+            "service", "connector", "bridge", "third-party", "external",
+            "rest", "graphql", "soap", "http", "grpc", "esb",
+        ],
+        "description": "API / Integration",
         "risk_profile": "HIGH",
-        "limits": {"transaction": 50000, "daily": 50000},
-        "compliance": ["SST", "BNM_FX", "SWIFT", "FATF", "AML"]
+        "limits": {},
     },
-    "westernunion": {
-        "keywords": ["western union", "wu transfer", "wu", "mtcn",
-                     "cash pickup", "wu agent", "money transfer"],
-        "description": "Western Union Money Transfer",
-        "folder": "westernunion",
-        "risk_profile": "HIGH",
-        "limits": {"transaction": 10000, "daily": 10000},
-        "compliance": ["SST", "BNM_FX", "OFAC", "FATF", "AML", "KYC"]
+    "notification": {
+        "keywords": [
+            "notification", "email", "sms", "push", "alert", "message",
+            "broadcast", "reminder", "inbox", "template",
+        ],
+        "description": "Notification Service",
+        "risk_profile": "MEDIUM",
+        "limits": {},
     },
-    "visadirect": {
-        "keywords": ["visa direct", "visa push", "visa card transfer",
-                     "push payment", "card-to-card", "visa network",
-                     "bin lookup", "luhn"],
-        "description": "Visa Direct Push Payment",
-        "folder": "visadirect",
-        "risk_profile": "HIGH",
-        "limits": {"transaction": 25000, "daily": 25000},
-        "compliance": ["SST", "VISA_NETWORK", "PCI_DSS", "FATF"]
+    "reporting": {
+        "keywords": [
+            "report", "analytics", "dashboard", "export", "statement",
+            "summary", "audit", "log", "history", "chart", "graph",
+            "metrics", "kpi", "receipt",
+        ],
+        "description": "Reporting & Analytics",
+        "risk_profile": "MEDIUM",
+        "limits": {},
     },
-    "eipo": {
-        "keywords": ["eipo", "electronic interbank payment", "interbank payment order",
-                     "swift", "bic", "sha charges", "our charges", "ben charges",
-                     "charge type", "purpose code", "beneficiary bank"],
-        "description": "Electronic Interbank Payment Order (EIPO)",
-        "folder": "eipo",
+    "data_management": {
+        "keywords": [
+            "data", "database", "import", "migration", "backup",
+            "sync", "storage", "record", "archive", "etl", "pipeline",
+        ],
+        "description": "Data Management",
+        "risk_profile": "MEDIUM",
+        "limits": {},
+    },
+    "security": {
+        "keywords": [
+            "security", "encryption", "compliance", "gdpr", "aml", "kyc",
+            "pci", "vulnerability", "patch", "firewall",
+            "ofac", "fatf", "sanctions", "penetration",
+        ],
+        "description": "Security & Compliance",
         "risk_profile": "CRITICAL",
-        "limits": {"transaction": 100000, "daily": 100000},
-        "compliance": ["SST", "BNM_FX", "SWIFT_MT103", "FATF", "AML", "OFAC"]
+        "limits": {},
+    },
+    "ui_feature": {
+        "keywords": [
+            "ui", "screen", "page", "form", "display", "layout", "design",
+            "frontend", "component", "button", "modal", "widget",
+            "dropdown", "responsive", "accessibility", "banner", "tooltip",
+        ],
+        "description": "UI / Frontend Feature",
+        "risk_profile": "LOW",
+        "limits": {},
+    },
+    "search": {
+        "keywords": [
+            "search", "filter", "sort", "query", "lookup", "find",
+            "list", "browse", "pagination", "facet", "index",
+        ],
+        "description": "Search & Discovery",
+        "risk_profile": "LOW",
+        "limits": {},
     },
 }
 
 CHANNEL_KEYWORDS = {
-    "MAE":     ["mae", "maya", "mobile", "android", "ios", "app"],
-    "M2U_WEB": ["m2u", "maybank2u", "web", "browser", "internet banking"],
-    "M2UBIZ":  ["m2ubiz", "business", "corporate"],
-    "API":     ["api", "backend", "microservice", "integration"],
+    "MOBILE": [
+        "mobile", "android", "ios", "app", "tablet",
+        "react native", "flutter",
+    ],
+    "WEB": [
+        "web", "browser", "frontend", "react", "angular", "vue",
+        "html", "css", "internet banking", "online portal",
+    ],
+    "API": [
+        "api", "backend", "microservice", "service",
+        "rest", "graphql", "integration",
+    ],
+    "CLI": ["cli", "command", "terminal", "script", "cron", "batch", "job"],
+}
+
+_COMPLIANCE_MAP = {
+    "payment":         ["PCI_DSS", "AML", "GDPR"],
+    "authentication":  ["OWASP", "GDPR"],
+    "security":        ["OWASP", "GDPR", "ISO27001", "PCI_DSS"],
+    "user_management": ["GDPR", "CCPA"],
+    "data_management": ["GDPR", "CCPA"],
+    "reporting":       ["GDPR"],
 }
 
 
@@ -79,12 +142,12 @@ def detect_module(story: dict) -> str:
     ).lower()
 
     scores = {}
-    for module, config in OVERSEAS_MODULES.items():
+    for domain, config in SOFTWARE_DOMAINS.items():
         score = sum(1 for kw in config["keywords"] if kw in text)
         if score > 0:
-            scores[module] = score
+            scores[domain] = score
 
-    return max(scores, key=scores.get) if scores else "ftt"
+    return max(scores, key=scores.get) if scores else "api_integration"
 
 
 def detect_channel(story: dict) -> str:
@@ -100,7 +163,7 @@ def detect_channel(story: dict) -> str:
         if score > 0:
             scores[channel] = score
 
-    return max(scores, key=scores.get) if scores else "MAE"
+    return max(scores, key=scores.get) if scores else "WEB"
 
 
 def detect_module_and_channel(story: dict) -> tuple:
@@ -108,20 +171,23 @@ def detect_module_and_channel(story: dict) -> tuple:
 
 
 def get_module_description(module: str) -> str:
-    return OVERSEAS_MODULES.get(module, {}).get("description", module.upper())
+    return SOFTWARE_DOMAINS.get(module, {}).get(
+        "description",
+        module.replace("_", " ").title()
+    )
 
 
 def get_module_folder(module: str) -> str:
-    return OVERSEAS_MODULES.get(module, {}).get("folder", module.lower())
+    return module.lower()
 
 
 def get_module_risk_profile(module: str) -> str:
-    return OVERSEAS_MODULES.get(module, {}).get("risk_profile", "HIGH")
+    return SOFTWARE_DOMAINS.get(module, {}).get("risk_profile", "MEDIUM")
 
 
 def get_module_compliance(module: str) -> list:
-    return OVERSEAS_MODULES.get(module, {}).get("compliance", [])
+    return _COMPLIANCE_MAP.get(module, [])
 
 
 def get_module_limits(module: str) -> dict:
-    return OVERSEAS_MODULES.get(module, {}).get("limits", {"transaction": 50000, "daily": 50000})
+    return SOFTWARE_DOMAINS.get(module, {}).get("limits", {})

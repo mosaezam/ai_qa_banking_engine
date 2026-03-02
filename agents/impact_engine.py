@@ -6,72 +6,98 @@ def analyze_impact(story):
 
     impact = []
 
-    # Financial Calculation
-    if any(k in text for k in ["sst", "fee", "total amount", "principal",
-                                "8%", "charge", "rate", "calculation",
-                                "rounding", "service fee", "agent fee"]):
+    # Financial / Payment Calculation
+    if any(k in text for k in [
+        "sst", "fee", "total amount", "principal", "charge", "rate",
+        "calculation", "rounding", "service fee", "agent fee",
+        "payment", "billing", "invoice", "price", "cost", "tax",
+        "discount", "refund", "checkout", "subtotal", "8%",
+    ]):
         impact.append("Financial Calculation Impact")
 
     # API Contract
-    if any(k in text for k in ["api", "inquiry", "response", "request",
-                                "payload", "schema", "contract", "endpoint",
-                                "integration", "microservice"]):
+    if any(k in text for k in [
+        "api", "inquiry", "response", "request", "payload", "schema",
+        "contract", "endpoint", "integration", "microservice", "webhook",
+        "rest", "graphql", "grpc", "http", "interface",
+    ]):
         impact.append("API Contract Impact")
 
-    # Feature Flag / DCC
-    if any(k in text for k in ["rmbp", "dcc", "feature flag", "toggle",
-                                "enable", "disable", "phase", "rollout",
-                                "flag", "config"]):
+    # Feature Flag / Configuration
+    if any(k in text for k in [
+        "rmbp", "dcc", "feature flag", "toggle", "enable", "disable",
+        "phase", "rollout", "flag", "config", "feature toggle",
+        "ab test", "canary", "experiment", "launch darkly",
+    ]):
         impact.append("Feature Flag Impact")
 
-    # Middleware / Gateway / SWIFT
-    if any(k in text for k in ["esb", "gateway", "swift", "nbc", "wu",
-                                "middleware", "routing", "timeout", "retry",
-                                "network", "visa network", "mt103"]):
+    # Middleware / Gateway / Integration Bus
+    if any(k in text for k in [
+        "esb", "gateway", "swift", "middleware", "routing", "timeout",
+        "retry", "network", "mt103", "message queue", "kafka",
+        "rabbitmq", "event", "broker", "bus", "connector",
+    ]):
         impact.append("Middleware ESB Impact")
 
-    # Core Banking / Ledger
-    if any(k in text for k in ["debit", "credit", "core", "ledger",
-                                "posting", "balance", "account", "cics",
-                                "core banking", "atomic"]):
+    # Core Banking / Data Integrity
+    if any(k in text for k in [
+        "debit", "credit", "core", "ledger", "posting", "balance",
+        "account", "core banking", "atomic", "consistency",
+        "data integrity", "rollback", "commit", "transaction",
+        "idempotent", "reconcil",
+    ]):
         impact.append("Core Banking Impact")
 
     # AML / Compliance
-    if any(k in text for k in ["ofac", "aml", "fatf", "kyc", "compliance",
-                                "sanctions", "screening", "purpose code",
-                                "source of funds", "declaration", "bnm",
-                                "regulatory", "pci"]):
+    if any(k in text for k in [
+        "ofac", "aml", "fatf", "kyc", "compliance", "sanctions",
+        "screening", "purpose code", "source of funds", "declaration",
+        "bnm", "regulatory", "pci", "gdpr", "ccpa", "hipaa",
+        "sox", "iso27001",
+    ]):
         impact.append("AML Compliance Impact")
 
     # Security / Authentication
-    if any(k in text for k in ["s2u", "secure2u", "authentication", "auth",
-                                "pci", "encryption", "mask", "luhn",
-                                "2fa", "otp", "pin", "password"]):
+    if any(k in text for k in [
+        "s2u", "secure2u", "authentication", "auth", "pci",
+        "encryption", "mask", "2fa", "otp", "pin", "password",
+        "jwt", "oauth", "token", "session", "xss", "sql injection",
+        "csrf", "security", "vulnerability",
+    ]):
         impact.append("Security Impact")
 
     # Validation / Input
-    if any(k in text for k in ["validate", "validation", "invalid",
-                                "format", "mandatory", "required", "reject",
-                                "iban", "swift code", "bic", "bin lookup",
-                                "card number", "account number"]):
+    if any(k in text for k in [
+        "validate", "validation", "invalid", "format", "mandatory",
+        "required", "reject", "iban", "swift code", "bic",
+        "card number", "account number", "input", "field", "form",
+        "constraint", "rule",
+    ]):
         impact.append("Validation Impact")
 
     # Limit / Boundary
-    if any(k in text for k in ["limit", "threshold", "maximum", "minimum",
-                                "daily", "exceed", "boundary", "cap",
-                                "tier", "segment", "premier", "standard"]):
+    if any(k in text for k in [
+        "limit", "threshold", "maximum", "minimum", "daily", "exceed",
+        "boundary", "cap", "tier", "segment", "quota",
+        "rate limit", "throttle",
+    ]):
         impact.append("Limit Boundary Impact")
 
     # Audit Trail
-    if any(k in text for k in ["audit", "trail", "log", "history",
-                                "statement", "reference", "record",
-                                "report", "receipt", "transaction history"]):
+    if any(k in text for k in [
+        "audit", "trail", "log", "history", "statement", "reference",
+        "record", "report", "receipt", "transaction history",
+        "track", "monitor", "event log",
+    ]):
         impact.append("Audit Trail Impact")
 
     # UI / Frontend
-    if any(k in text for k in ["screen", "display", "tooltip", "label",
-                                "ui", "frontend", "page", "field",
-                                "confirmation", "receipt page", "banner"]):
+    if any(k in text for k in [
+        "screen", "display", "tooltip", "label", "ui", "frontend",
+        "page", "field", "confirmation", "receipt page", "banner",
+        "modal", "button", "form", "layout", "responsive",
+        "mobile", "accessibility",
+    ]):
         impact.append("UI Frontend Impact")
 
     # Complexity
