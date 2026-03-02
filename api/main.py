@@ -18,6 +18,7 @@ from agents.governance_engine import apply_governance_rules, get_risk_color
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import inch
+from xml.sax.saxutils import escape as xml_escape
 from docx import Document
 from openpyxl import Workbook
 
@@ -149,13 +150,15 @@ def export_pdf():
     elements.append(Spacer(1, 0.3 * inch))
 
     for tc in latest_result["test_cases"]:
-        content = f"""
-        <b>{tc['test_case_id']} - {tc['summary']}</b><br/>
-        Module: {tc['module']} | Channel: {tc['channel']} | Priority: {tc['priority']} | Type: {tc['test_type']}<br/>
-        <b>Precondition:</b> {tc['precondition']}<br/>
-        <b>Steps:</b> {tc['steps']}<br/>
-        <b>Expected:</b> {tc['expected_result']}<br/><br/>
-        """
+        steps_html = xml_escape(tc['steps']).replace('\n', '<br/>')
+        content = (
+            f"<b>{xml_escape(tc['test_case_id'])} - {xml_escape(tc['summary'])}</b><br/>"
+            f"Module: {xml_escape(tc['module'])} | Channel: {xml_escape(tc['channel'])} | "
+            f"Priority: {xml_escape(tc['priority'])} | Type: {xml_escape(tc['test_type'])}<br/>"
+            f"<b>Precondition:</b> {xml_escape(tc['precondition'])}<br/>"
+            f"<b>Steps:</b><br/>{steps_html}<br/>"
+            f"<b>Expected:</b> {xml_escape(tc['expected_result'])}<br/><br/>"
+        )
         elements.append(Paragraph(content, styles["Normal"]))
         elements.append(Spacer(1, 0.2 * inch))
 

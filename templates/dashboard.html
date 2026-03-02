@@ -82,6 +82,7 @@ body::after {
   animation: scanline 6s ease-in-out infinite;
   z-index: 1;
   opacity: 0.4;
+  pointer-events: none;
 }
 
 @keyframes scanline {
@@ -1173,7 +1174,7 @@ body::after {
               <span class="tc-expand-btn" onclick="toggleTC(this)">&#9662; Show details</span>
               <div class="tc-body">
                 <div class="tc-section"><div class="tc-section-label">Precondition</div><div class="tc-section-text">{{ tc.precondition }}</div></div>
-                <div class="tc-section"><div class="tc-section-label">Steps</div><div class="tc-section-text">{{ tc.steps.replace('\n','<br>') | safe }}</div></div>
+                <div class="tc-section"><div class="tc-section-label">Steps</div><div class="tc-section-text">{{ tc.steps | e | replace('\n', '<br>') | safe }}</div></div>
                 <div class="tc-section"><div class="tc-section-label">Expected Result</div><div class="tc-section-text">{{ tc.expected_result }}</div></div>
               </div>
             </div>
