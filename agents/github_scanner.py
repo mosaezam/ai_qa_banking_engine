@@ -88,12 +88,22 @@ def scan_github_repo(repo_url, token=None, max_files=40):
     if repo_resp.status_code == 404:
         return _default_result(
             repo_name=f"{owner}/{repo}",
-            error=f"Repository {owner}/{repo} not found or is private",
+            error=f"Repository '{owner}/{repo}' not found or is private",
+        )
+    if repo_resp.status_code == 403:
+        return _default_result(
+            repo_name=f"{owner}/{repo}",
+            error="GitHub API rate limit exceeded (60 req/hr for unauthenticated). Wait ~1 hour or add a GitHub token.",
+        )
+    if repo_resp.status_code == 401:
+        return _default_result(
+            repo_name=f"{owner}/{repo}",
+            error="GitHub authentication failed — check your token.",
         )
     if repo_resp.status_code != 200:
         return _default_result(
             repo_name=f"{owner}/{repo}",
-            error=f"GitHub API error: {repo_resp.status_code}",
+            error=f"GitHub API error {repo_resp.status_code} — try again later.",
         )
 
     default_branch = repo_resp.json().get('default_branch', 'main')

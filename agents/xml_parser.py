@@ -1,39 +1,95 @@
 import xml.etree.ElementTree as ET
 from bs4 import BeautifulSoup
 
+
 def parse_jira_xml(file_path):
+    try:
+        with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+            content = f.read()
 
-    with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
-        content = f.read()
+        # Try parsing normally first
+        try:
+            root = ET.fromstring(content)
+        except ET.ParseError:
+            # If malformed, try trimming before first "<"
+            first_tag = content.find("<")
+            if first_tag == -1:
+                return _empty_response("No valid XML content found.")
+            content = content[first_tag:]
+            root = ET.fromstring(content)
 
-    # Find real XML start
-    start_index = content.find("<rss")
-    if start_index == -1:
-        raise ValueError("No <rss> root found")
+        # -----------------------------
+        # UNIVERSAL TEXT EXTRACTION
+        # -----------------------------
 
-    xml_content = content[start_index:]
-    root = ET.fromstring(xml_content)
+        summary = ""
+        description = ""
+        priority = ""
 
-    item = root.find(".//item")
-    if item is None:
-        raise ValueError("No <item> found")
+        # Try common Jira RSS structure
+        item = root.find(".//item")
 
-    # Title (Jira RSS uses <title>)
-    summary = item.find("title").text if item.find("title") is not None else ""
+        if item is not None:
+            summary = item.findtext("title", default="")
+            priority = item.findtext("priority", default="")
 
-    # Extract FULL description including nested HTML
-    description_element = item.find("description")
-    description_raw = ET.tostring(description_element, encoding="unicode") if description_element is not None else ""
+            description_element = item.find("description")
+            if description_element is not None:
+                raw_desc = ET.tostring(description_element, encoding="unicode")
+                description = _clean_html(raw_desc)
 
-    # Clean HTML
-    soup = BeautifulSoup(description_raw, "html.parser")
-    description = soup.get_text(separator=" ").lower()
+        else:
+            # Generic XML handling (any structure)
 
-    priority = item.findtext("priority", default="")
+            # Try common tags
+            summary = (
+                root.findtext(".//summary")
+                or root.findtext(".//title")
+                or ""
+            )
 
+            priority = (
+                root.findtext(".//priority")
+                or ""
+            )
+
+            # Collect ALL text nodes
+            all_text = []
+            for elem in root.iter():
+                if elem.text and elem.text.strip():
+                    all_text.append(elem.text.strip())
+
+            description = " ".join(all_text)
+            description = _clean_html(description)
+
+        if not description:
+            description = "No readable description found."
+
+        return {
+            "summary": summary.strip(),
+            "description": description.lower(),
+            "priority": priority.strip(),
+            "word_count": len(description.split())
+        }
+
+    except Exception as e:
+        # NEVER crash your FastAPI app
+        return _empty_response(f"XML Processing Error: {str(e)}")
+
+
+# -----------------------------
+# Helper Functions
+# -----------------------------
+
+def _clean_html(raw_text):
+    soup = BeautifulSoup(raw_text, "html.parser")
+    return soup.get_text(separator=" ").strip()
+
+
+def _empty_response(message):
     return {
-        "summary": summary,
-        "description": description,
-        "priority": priority,
-        "word_count": len(description.split())
+        "summary": "",
+        "description": message.lower(),
+        "priority": "",
+        "word_count": 0
     }

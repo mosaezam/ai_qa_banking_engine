@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jira>
+    <project>
+        <key>AIQA</key>
+        <name>AI QA Banking Engine</name>
+    </project>
+
+    <issue>
+        <type>User Story</type>
+        <priority>High</priority>
+        <summary>Secure International Data Remittance with Risk Scoring</summary>
+
+        <description><![CDATA[
+As a registered banking customer,
+I want to send money internationally through a secure digital remittance platform,
+So that the beneficiary receives funds safely, quickly, and in compliance with regulatory requirements.
+
+BUSINESS OBJECTIVE:
+Enable secure cross-border remittance with automated validation, compliance checks,
+fraud risk scoring, and real-time transaction tracking.
+
+FUNCTIONAL REQUIREMENTS:
+
+1. Sender Authentication
+- Multi-Factor Authentication (MFA) required
+- Session validation before initiating transaction
+- Re-authentication if session expires
+
+2. Beneficiary Data Capture
+- Beneficiary Full Name
+- Bank Name
+- SWIFT/BIC Code (8 or 11 characters)
+- IBAN or Account Number
+- Destination Country
+- Transfer Amount
+- Currency Type
+- Purpose of Remittance
+
+System Validations:
+- SWIFT format validation
+- IBAN checksum validation
+- Currency-country compatibility
+- Amount threshold validation
+
+3. Real-Time Validation Engine
+- Verify sender account balance
+- Apply real-time FX conversion rate
+- Calculate remittance charges
+- Display total debit amount
+
+If balance is less than required amount, block transaction.
+
+4. Compliance and Risk Scoring
+- Sanctions screening
+- PEP screening
+- AML pattern analysis
+- Velocity checks for multiple transfers
+
+Each transaction must generate:
+- Risk Score between 0 and 100
+- Risk Category: Low, Medium, or High
+
+If risk score is less than 70, transaction proceeds automatically.
+If risk score is greater than 85, transaction moves to manual review.
+
+5. Transaction Processing
+- Generate unique Transaction ID
+- Encrypt payload using AES-256
+- Send to Payment Gateway API
+- Store audit log entry
+
+Transaction Status Values:
+- INITIATED
+- PROCESSING
+- SUCCESS
+- FAILED
+- PENDING_REVIEW
+
+6. Notifications
+- In-app confirmation
+- Email notification
+- Optional SMS alert
+
+7. Audit Logging
+- User ID
+- IP Address
+- Timestamp
+- Risk Score
+- Compliance Decision
+Logs retained for 7 years.
+
+NON-FUNCTIONAL REQUIREMENTS:
+- Response time under 3 seconds
+- 99.9 percent availability
+- Support 10,000 transactions per hour
+- Secure encrypted storage
+        ]]></description>
+
+        <acceptance_criteria><![CDATA[
+SCENARIO 1: Successful Remittance
+Given user is authenticated
+And beneficiary details are valid
+And sufficient balance exists
+And risk score is less than 70
+When user confirms transaction
+Then system processes transfer
+And status becomes SUCCESS
+And user receives confirmation
+
+SCENARIO 2: High Risk Transaction
+Given transaction amount exceeds threshold
+And beneficiary is flagged in sanctions list
+When transaction is submitted
+Then system assigns risk score greater than 85
+And status becomes PENDING_REVIEW
+And compliance team is notified
+
+SCENARIO 3: Invalid SWIFT Code
+Given user enters invalid SWIFT format
+When user clicks submit
+Then system displays validation error
+And transaction is not processed
+
+SCENARIO 4: Insufficient Balance
+Given user balance is less than required debit amount
+When transaction is initiated
+Then system blocks transaction
+And displays insufficient balance message
+        ]]></acceptance_criteria>
+
+        <labels>
+            <label>remittance</label>
+            <label>risk-scoring</label>
+            <label>aml</label>
+            <label>compliance</label>
+            <label>cross-border</label>
+        </labels>
+
+    </issue>
+</jira>
